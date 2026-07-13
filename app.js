@@ -544,6 +544,63 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // --- Draggable Resizer Setup ---
+  const resizeHandle = document.getElementById("tc-resize-handle");
+  const tcIde = document.querySelector(".tc-ide");
+  const rightPanel = document.querySelector(".right-panel");
+
+  if (resizeHandle && tcIde && rightPanel) {
+    let isDragging = false;
+
+    const startDrag = (e) => {
+      isDragging = true;
+      resizeHandle.classList.add("dragging");
+      document.body.style.cursor = "ns-resize";
+      document.body.style.userSelect = "none";
+      
+      // Prevent text/iframe selection issues
+      if (e.cancelable) e.preventDefault();
+    };
+
+    const doDrag = (e) => {
+      if (!isDragging) return;
+
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+      if (!clientY) return;
+
+      const panelRect = rightPanel.getBoundingClientRect();
+      let newHeight = clientY - panelRect.top;
+
+      // Sizing constraints (header + menus + status = approx 100px)
+      const minHeight = 90;
+      const maxHeight = panelRect.height - 80; // leave at least 80px for tabs
+
+      if (newHeight < minHeight) newHeight = minHeight;
+      if (newHeight > maxHeight) newHeight = maxHeight;
+
+      tcIde.style.height = newHeight + "px";
+    };
+
+    const stopDrag = () => {
+      if (isDragging) {
+        isDragging = false;
+        resizeHandle.classList.remove("dragging");
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
+    };
+
+    // Mouse events
+    resizeHandle.addEventListener("mousedown", startDrag);
+    window.addEventListener("mousemove", doDrag);
+    window.addEventListener("mouseup", stopDrag);
+
+    // Touch events for mobile/tablet resizing
+    resizeHandle.addEventListener("touchstart", startDrag);
+    window.addEventListener("touchmove", doDrag, { passive: false });
+    window.addEventListener("touchend", stopDrag);
+  }
+
   // --- Initializer Run ---
   populateSidebar();
   populateSyntaxTab();
