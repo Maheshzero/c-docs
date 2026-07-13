@@ -137,6 +137,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function selectTopic(topicId) {
     activeTopicId = topicId;
     
+    // Close mobile drawer if open
+    const sidebarEl = document.querySelector(".sidebar");
+    const backdropEl = document.getElementById("sidebar-backdrop");
+    if (sidebarEl && sidebarEl.classList.contains("open")) {
+      sidebarEl.classList.remove("open");
+      if (backdropEl) backdropEl.classList.remove("active");
+    }
+
     // Update sidebar styles
     document.querySelectorAll(".menu-item").forEach(item => {
       if (item.getAttribute("data-id") === topicId) {
@@ -482,6 +490,59 @@ document.addEventListener("DOMContentLoaded", () => {
       closeTerminal();
     }
   });
+
+  // --- Mobile Navigation Setup ---
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+  const mobileRunBtn = document.getElementById("mobile-run-btn");
+  const mobileTabDocs = document.getElementById("mobile-tab-docs");
+  const mobileTabIde = document.getElementById("mobile-tab-ide");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
+  const sidebar = document.querySelector(".sidebar");
+  const contentArea = document.querySelector(".content-area");
+
+  // Set default view on mobile content area container
+  if (contentArea) {
+    contentArea.classList.add("view-docs");
+  }
+
+  // Toggle Sidebar Drawer
+  if (mobileMenuBtn && sidebar && sidebarBackdrop) {
+    mobileMenuBtn.addEventListener("click", () => {
+      sidebar.classList.toggle("open");
+      sidebarBackdrop.classList.toggle("active");
+    });
+
+    sidebarBackdrop.addEventListener("click", () => {
+      sidebar.classList.remove("open");
+      sidebarBackdrop.classList.remove("active");
+    });
+  }
+
+  // Quick Run Button on Mobile Top Header
+  if (mobileRunBtn) {
+    mobileRunBtn.addEventListener("click", () => {
+      // Force switch to IDE tab view so they can see the terminal open
+      if (mobileTabIde) mobileTabIde.click();
+      triggerRun();
+    });
+  }
+
+  // Switch Between Docs & IDE Views (Bottom Tab Bar)
+  if (mobileTabDocs && mobileTabIde && contentArea) {
+    mobileTabDocs.addEventListener("click", () => {
+      mobileTabDocs.classList.add("active");
+      mobileTabIde.classList.remove("active");
+      contentArea.classList.add("view-docs");
+      contentArea.classList.remove("view-ide");
+    });
+
+    mobileTabIde.addEventListener("click", () => {
+      mobileTabIde.classList.add("active");
+      mobileTabDocs.classList.remove("active");
+      contentArea.classList.add("view-ide");
+      contentArea.classList.remove("view-docs");
+    });
+  }
 
   // --- Initializer Run ---
   populateSidebar();
