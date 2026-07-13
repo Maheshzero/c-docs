@@ -942,8 +942,12 @@ html, body {
   }
 
   .doc-panel {
-    padding: 18px 16px;
+    padding: 18px 16px 60px;
     border-right: none;
+  }
+
+  .tab-content {
+    padding-bottom: 60px;
   }
 
   .right-panel {
