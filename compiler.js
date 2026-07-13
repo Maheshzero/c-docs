@@ -6,7 +6,7 @@ const compiler = {
 
     // Heuristic C syntax checks (similar to what GCC would catch)
     
-    // 1. Missing semicolon check (excluding lines ending in block openings/closures, includes, defines, comments)
+    // 1. Missing semicolon check (excluding lines ending in block openings/closures, includes, defines, comments, etc.)
     const lines = code.split("\n");
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
@@ -18,6 +18,8 @@ const compiler = {
           !line.endsWith("{") && 
           !line.endsWith("}") && 
           !line.endsWith(",") && 
+          !line.endsWith(")") && // skip function calls, conditions, loops ending in brackets
+          !line.endsWith(":") && // skip switch case labels
           !line.startsWith("for") && 
           !line.startsWith("if") && 
           !line.startsWith("while") && 
@@ -33,53 +35,49 @@ const compiler = {
 
     // 2. Check for missing headers (implicit declarations)
     // Basic fork/exec checks
-    if (topicId.startsWith("fork") || topicId === "execv-call") {
-      if (!/#include\s*<unistd.h>/i.test(code)) {
-        warnings.push({
-          line: 1,
-          msg: `warning: implicit declaration of function 'fork' [-Wimplicit-function-declaration]`
-        });
-      }
+    if (code.includes("fork") && !/#include\s*<unistd.h>/i.test(code)) {
+      warnings.push({
+        line: 1,
+        msg: `warning: implicit declaration of function 'fork' [-Wimplicit-function-declaration]`
+      });
+    }
+    if (code.includes("execv") && !/#include\s*<unistd.h>/i.test(code)) {
+      warnings.push({
+        line: 1,
+        msg: `warning: implicit declaration of function 'execv' [-Wimplicit-function-declaration]`
+      });
     }
     
     // Directory search checks
-    if (topicId === "dir-search") {
-      if (!/#include\s*<dirent.h>/i.test(code)) {
-        warnings.push({
-          line: 1,
-          msg: `warning: implicit declaration of function 'opendir' [-Wimplicit-function-declaration]`
-        });
-      }
+    if (code.includes("opendir") && !/#include\s*<dirent.h>/i.test(code)) {
+      warnings.push({
+        line: 1,
+        msg: `warning: implicit declaration of function 'opendir' [-Wimplicit-function-declaration]`
+      });
     }
 
     // Stat checks
-    if (topicId === "file-stat") {
-      if (!/#include\s*<sys\/stat.h>/i.test(code)) {
-        warnings.push({
-          line: 1,
-          msg: `warning: implicit declaration of function 'stat' [-Wimplicit-function-declaration]`
-        });
-      }
+    if (code.includes("stat") && !/#include\s*<sys\/stat.h>/i.test(code)) {
+      warnings.push({
+        line: 1,
+        msg: `warning: implicit declaration of function 'stat' [-Wimplicit-function-declaration]`
+      });
     }
 
     // Shared Memory checks
-    if (topicId === "shm-even-odd" || topicId === "prod-cons") {
-      if (code.includes("shmget") && !/#include\s*<sys\/shm.h>/i.test(code)) {
-        warnings.push({
-          line: 1,
-          msg: `warning: implicit declaration of function 'shmget' [-Wimplicit-function-declaration]`
-        });
-      }
+    if (code.includes("shmget") && !/#include\s*<sys\/shm.h>/i.test(code)) {
+      warnings.push({
+        line: 1,
+        msg: `warning: implicit declaration of function 'shmget' [-Wimplicit-function-declaration]`
+      });
     }
 
     // Message Queue checks
-    if (topicId === "msg-queue") {
-      if (code.includes("msgget") && !/#include\s*<sys\/msg.h>/i.test(code)) {
-        warnings.push({
-          line: 1,
-          msg: `warning: implicit declaration of function 'msgget' [-Wimplicit-function-declaration]`
-        });
-      }
+    if (code.includes("msgget") && !/#include\s*<sys\/msg.h>/i.test(code)) {
+      warnings.push({
+        line: 1,
+        msg: `warning: implicit declaration of function 'msgget' [-Wimplicit-function-declaration]`
+      });
     }
 
     return {
@@ -90,10 +88,45 @@ const compiler = {
   },
 
   // Runs the interactive terminal simulation of an algorithm
-  runSimulation: function(topicId, terminal, onFinish) {
+  runSimulation: function(topicId, code, terminal, onFinish) {
     const sim = this.simulations[topicId];
     if (sim) {
       sim(terminal, onFinish);
+    } else if (code) {
+      // Sandbox simulation!
+      terminal.writeLine("Executing compiled sandbox binary...");
+      terminal.writeLine("Analyzing code capabilities...");
+      setTimeout(() => {
+        if (code.includes("fork")) {
+          terminal.writeLine("- Found fork() process spawning logic!");
+          terminal.writeLine("- Simulating process lifecycle...");
+          terminal.writeLine("PID of parent is 6128");
+          terminal.writeLine("PID of parent of parent is 2997");
+          terminal.writeLine("PID of child is 6129");
+          terminal.writeLine("PID of parent of child is 6128");
+          terminal.writeLine("Process completed successfully.");
+        } else if (code.includes("shmget") || code.includes("shmat")) {
+          terminal.writeLine("- Found Shared Memory IPC logic!");
+          terminal.writeLine("- Initializing memory segments...");
+          terminal.writeLine("Attached segment ID 32768 at address 0x7f9a12bc");
+          terminal.writeLine("Data read/write complete.");
+        } else if (code.includes("msgget")) {
+          terminal.writeLine("- Found Message Queue IPC logic!");
+          terminal.writeLine("- Creating queue ID 16384...");
+          terminal.writeLine("Messages sent and received successfully.");
+        } else if (code.includes("pthread_create")) {
+          terminal.writeLine("- Found pthread multithreading logic!");
+          terminal.writeLine("- Spawning thread threads...");
+          terminal.writeLine("Thread 1 executing...");
+          terminal.writeLine("Thread 2 executing...");
+          terminal.writeLine("Threads joined successfully.");
+        } else {
+          terminal.writeLine("- Code contains standard main entry point.");
+          terminal.writeLine("Program executed successfully with exit code 0.");
+        }
+        terminal.writeLine("");
+        onFinish();
+      }, 1000);
     } else {
       terminal.writeLine("No execution logic found.");
       onFinish();

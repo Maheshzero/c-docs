@@ -27,8 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Bottom Tabs Panel
   const tabBtnSyntax = document.getElementById("tab-btn-syntax");
   const tabBtnShortcuts = document.getElementById("tab-btn-shortcuts");
+  const tabBtnGuide = document.getElementById("tab-btn-guide");
   const tabContentSyntax = document.getElementById("tab-content-syntax");
   const tabContentShortcuts = document.getElementById("tab-content-shortcuts");
+  const tabContentGuide = document.getElementById("tab-content-guide");
   const syntaxItemsList = document.getElementById("syntax-items-list");
   const shortcutsPanelContent = document.getElementById("shortcuts-panel-content");
 
@@ -51,9 +53,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Code state tracking (saved vs current draft)
   const savedCode = {};
-  const editorCode = {};
   const isCompiled = {};
   const compiledTopicId = {};
+
+  // --- Virtual Filesystem (VFS) State ---
+  const virtualFS = {};
+  let activeFilename = "fork_basic.c"; // active file in Gedit
+  let compiledBinarySource = "";       // filename compiled to binary 'a'
+
+  const topicFilenames = {
+    "fork-basic": "fork_basic.c",
+    "fork-loop": "fork_loop.c",
+    "execv-call": "execv_call.c",
+    "dir-search": "dir_search.c",
+    "file-stat": "file_stat.c",
+    "shm-even-odd": "shm_even_odd.c",
+    "msg-queue": "msg_queue.c",
+    "fcfs-sched": "fcfs_sched.c",
+    "sjf-sched": "sjf_sched.c",
+    "rr-sched": "rr_sched.c",
+    "priority-sched": "priority_sched.c",
+    "first-fit": "first_fit.c",
+    "best-fit": "best_fit.c",
+    "worst-fit": "worst_fit.c",
+    "prod-cons": "prod_cons.c",
+    "fifo-page": "fifo_page.c",
+    "lru-page": "lru_page.c",
+    "bankers": "bankers.c"
+  };
 
   // Terminal interactive state
   let terminalIsInteractive = false;
@@ -61,11 +88,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const commandHistory = [];
   let historyIndex = -1;
 
-  // Initialize file states
+  // Initialize file states & VFS
   topicsData.forEach(topic => {
     savedCode[topic.id] = topic.code;
-    editorCode[topic.id] = topic.code;
     isCompiled[topic.id] = false;
+    const filename = getTopicFilename(topic);
+    virtualFS[filename] = topic.code;
   });
 
   // --- Populate UI Panels ---
@@ -211,20 +239,19 @@ document.addEventListener("DOMContentLoaded", () => {
     docCodeCode.innerText = savedCode[topicId];
 
     // Update Gedit editor contents
-    editorTextarea.value = editorCode[topicId];
+    activeFilename = filename;
+    editorTextarea.value = virtualFS[activeFilename] || "";
     updateGeditFilenameTabState();
   }
 
   function getTopicFilename(topic) {
-    return topic.title.toLowerCase().replace(/[^a-z0-9]/g, "_") + ".c";
+    if (!topic) return "program.c";
+    return topicFilenames[topic.id] || (topic.title.toLowerCase().replace(/[^a-z0-9]/g, "_") + ".c");
   }
 
   function updateGeditFilenameTabState() {
-    const topic = topicsData.find(t => t.id === activeTopicId);
-    if (!topic) return;
-    const filename = getTopicFilename(topic);
-    const isDirty = editorCode[activeTopicId] !== savedCode[activeTopicId];
-    geditFilenameTab.innerText = (isDirty ? "*" : "") + filename;
+    const isDirty = editorTextarea.value !== (virtualFS[activeFilename] || "");
+    geditFilenameTab.innerText = (isDirty ? "*" : "") + activeFilename;
   }
 
   // --- Tab Swapping (Workspace & Bottom Panel) ---
@@ -249,36 +276,47 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setHelpTab(tab) {
     activeHelpTab = tab;
+    // Reset active states
+    tabBtnSyntax.classList.remove("active");
+    tabBtnShortcuts.classList.remove("active");
+    tabBtnGuide.classList.remove("active");
+    tabContentSyntax.classList.remove("active");
+    tabContentShortcuts.classList.remove("active");
+    tabContentGuide.classList.remove("active");
+
     if (tab === "syntax") {
       tabBtnSyntax.classList.add("active");
-      tabBtnShortcuts.classList.remove("active");
       tabContentSyntax.classList.add("active");
-      tabContentShortcuts.classList.remove("active");
-    } else {
-      tabBtnSyntax.classList.remove("active");
+    } else if (tab === "shortcuts") {
       tabBtnShortcuts.classList.add("active");
-      tabContentSyntax.classList.remove("active");
       tabContentShortcuts.classList.add("active");
+    } else if (tab === "guide") {
+      tabBtnGuide.classList.add("active");
+      tabContentGuide.classList.add("active");
     }
   }
 
   // --- Gedit Editor Handlers ---
 
   editorTextarea.addEventListener("input", (e) => {
-    editorCode[activeTopicId] = e.target.value;
     updateGeditFilenameTabState();
   });
 
   geditSaveBtn.addEventListener("click", () => {
-    savedCode[activeTopicId] = editorCode[activeTopicId];
-    
-    // Reset compilation flag since files changed
-    isCompiled[activeTopicId] = false;
-    
+    const code = editorTextarea.value;
+    virtualFS[activeFilename] = code;
+
+    // Check if Gedit active file matches currently selected syllabus topic
+    const activeTopic = topicsData.find(t => t.id === activeTopicId);
+    const expectedFilename = activeTopic ? getTopicFilename(activeTopic) : "";
+
+    if (activeFilename === expectedFilename && activeTopicId) {
+      savedCode[activeTopicId] = code;
+      docCodeCode.innerText = code;
+      isCompiled[activeTopicId] = false;
+    }
+
     updateGeditFilenameTabState();
-    
-    // Update code viewer in doc panel
-    docCodeCode.innerText = savedCode[activeTopicId];
 
     // Show temporary saved indicator
     const prevText = geditSaveBtn.innerText;
@@ -293,7 +331,7 @@ document.addEventListener("DOMContentLoaded", () => {
       geditSaveBtn.style.color = "";
     }, 1000);
 
-    writeTerminalTextLine(`[Disk] Saved file ${getTopicFilename(topicsData.find(t => t.id === activeTopicId))}`);
+    writeTerminalTextLine(`[Disk] Saved file ${activeFilename}`);
   });
 
   // --- Terminal Command Engine ---
@@ -302,6 +340,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const line = document.createElement("div");
     line.className = "terminal-line";
     line.innerText = text;
+    terminalLines.appendChild(line);
+    // Scroll to bottom
+    terminalLines.scrollTop = terminalLines.scrollHeight;
+  }
+
+  function writeTerminalHtmlLine(html) {
+    const line = document.createElement("div");
+    line.className = "terminal-line";
+    line.innerHTML = html;
     terminalLines.appendChild(line);
     // Scroll to bottom
     terminalLines.scrollTop = terminalLines.scrollHeight;
@@ -363,6 +410,164 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // --- Modularized Command Map ---
+  const commands = {
+    clear: () => {
+      clearTerminal();
+    },
+    help: () => {
+      writeTerminalTextLine("Operating Systems Lab Simulator Help:");
+      writeTerminalTextLine("  gedit <filename>  - Opens the file in the Gedit editor tab");
+      writeTerminalTextLine("  gcc <file> -o a   - Compiles the file (reads saved version on disk)");
+      writeTerminalTextLine("  ./a               - Runs the compiled binary");
+      writeTerminalTextLine("  ls                - Lists files in the current workspace directory");
+      writeTerminalTextLine("  cat <file>        - Displays the content of a file");
+      writeTerminalTextLine("  rm <file>         - Removes/deletes a file from the workspace");
+      writeTerminalTextLine("  clear             - Clears the terminal screen");
+    },
+    ls: () => {
+      const files = Object.keys(virtualFS);
+      if (files.length === 0) {
+        writeTerminalTextLine("Directory is empty.");
+        return;
+      }
+      // Highlight "a" green in columns output
+      let outputHtml = "";
+      files.forEach(f => {
+        if (f === "a") {
+          outputHtml += `<span style="color: #22c55e; font-weight: bold;">a</span>&nbsp;&nbsp;&nbsp;&nbsp;`;
+        } else {
+          outputHtml += `<span>${f}</span>&nbsp;&nbsp;&nbsp;&nbsp;`;
+        }
+      });
+      writeTerminalHtmlLine(outputHtml);
+    },
+    cat: (args) => {
+      const filename = args[0];
+      if (!filename) {
+        writeTerminalTextLine("cat: missing file operand");
+        return;
+      }
+      if (virtualFS[filename] !== undefined) {
+        if (filename === "a") {
+          writeTerminalTextLine("[Binary Executable Content]");
+        } else {
+          const content = virtualFS[filename];
+          content.split("\n").forEach(line => writeTerminalTextLine(line));
+        }
+      } else {
+        writeTerminalTextLine(`cat: ${filename}: No such file or directory`);
+      }
+    },
+    rm: (args) => {
+      const filename = args[0];
+      if (!filename) {
+        writeTerminalTextLine("rm: missing operand");
+        return;
+      }
+      if (virtualFS[filename] !== undefined) {
+        delete virtualFS[filename];
+        if (filename === "a") {
+          compiledBinarySource = "";
+        }
+        writeTerminalTextLine(`Removed file ${filename}`);
+      } else {
+        writeTerminalTextLine(`rm: cannot remove '${filename}': No such file or directory`);
+      }
+    },
+    gedit: (args) => {
+      const filename = args[0];
+      if (!filename) {
+        writeTerminalTextLine("gedit: missing file operand");
+        return;
+      }
+      
+      // Create new file if it doesn't exist in VFS
+      if (virtualFS[filename] === undefined) {
+        virtualFS[filename] = "";
+      }
+      
+      activeFilename = filename;
+      
+      // Match against existing syllabus topic
+      const matchingTopic = topicsData.find(t => getTopicFilename(t) === filename);
+      if (matchingTopic) {
+        activeTopicId = matchingTopic.id;
+        document.querySelectorAll(".menu-item").forEach(item => {
+          if (item.getAttribute("data-id") === activeTopicId) {
+            item.classList.add("active");
+          } else {
+            item.classList.remove("active");
+          }
+        });
+      } else {
+        activeTopicId = null;
+        document.querySelectorAll(".menu-item").forEach(item => item.classList.remove("active"));
+      }
+      
+      // Load editor content
+      editorTextarea.value = virtualFS[activeFilename] || "";
+      updateGeditFilenameTabState();
+      setWorkspaceTab("gedit");
+      writeTerminalTextLine(`Opened Gedit editor tab for ${filename}`);
+    },
+    gcc: (args) => {
+      const fileArg = args[0] || "";
+      const hasOutFlag = args.includes("-o");
+      const outVal = args[args.indexOf("-o") + 1] || "";
+
+      if (!fileArg) {
+        writeTerminalTextLine("gcc: fatal error: no input files");
+        return;
+      }
+
+      if (virtualFS[fileArg] === undefined) {
+        writeTerminalTextLine(`gcc: error: ${fileArg}: No such file or directory`);
+        return;
+      }
+
+      if (!hasOutFlag || outVal !== "a") {
+        writeTerminalTextLine("gcc: error: compilation requires output flag '-o a'");
+        return;
+      }
+
+      writeTerminalTextLine(`compiling ${fileArg}...`);
+      
+      // Check for unsaved changes in current active Gedit view
+      const isDirty = (activeFilename === fileArg) && (editorTextarea.value !== (virtualFS[activeFilename] || ""));
+      if (isDirty) {
+        writeTerminalHtmlLine(`<span style="color: #fbbf24;">warning: You have unsaved changes in Gedit. Compiling previously saved version!</span>`);
+      }
+
+      setTimeout(() => {
+        const fileContent = virtualFS[fileArg];
+        // If it's a syllabus topic, compile using its ID. Else compile sandbox template.
+        const matchingTopic = topicsData.find(t => getTopicFilename(t) === fileArg);
+        const compileId = matchingTopic ? matchingTopic.id : "sandbox";
+
+        const result = compiler.compile(compileId, fileContent);
+        
+        if (result.success) {
+          result.warnings.forEach(w => {
+            writeTerminalHtmlLine(`<span style="color: #fbbf24;">${fileArg}:${w.line}: warning: ${w.msg}</span>`);
+          });
+          compiledBinarySource = fileArg;
+          virtualFS["a"] = "[Binary Executable]";
+          writeTerminalHtmlLine(`<span style="color: #34d399; font-weight: bold;">Compilation successful. Output written to 'a'</span>`);
+        } else {
+          result.errors.forEach(err => {
+            writeTerminalHtmlLine(`<span style="color: #f87171;">${fileArg}:${err.line}: ${err.msg}</span>`);
+          });
+          if (virtualFS["a"]) {
+            delete virtualFS["a"];
+            compiledBinarySource = "";
+          }
+        }
+      }, 500);
+    }
+  };
+
+  // --- Executive Command Dispatcher ---
   function executeShellCommand(cmdString) {
     const rawCmd = cmdString.trim();
     if (rawCmd) {
@@ -375,98 +580,45 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!rawCmd) return;
 
+    // Check if running executable ./a
+    if (rawCmd === "./a") {
+      if (virtualFS["a"] === undefined || !compiledBinarySource) {
+        writeTerminalTextLine("bash: ./a: No such file or directory (did you compile it?)");
+        return;
+      }
+      
+      // Execute compiled binary simulation
+      terminalIsInteractive = true;
+      writeTerminalTextLine(`Executing binary image ./a (compiled from ${compiledBinarySource})...`);
+      
+      const matchingTopic = topicsData.find(t => getTopicFilename(t) === compiledBinarySource);
+      const compileId = matchingTopic ? matchingTopic.id : "sandbox";
+      const codeToRun = virtualFS[compiledBinarySource];
+      
+      setTimeout(() => {
+        compiler.runSimulation(compileId, codeToRun, {
+          writeLine: (text) => writeTerminalTextLine(text),
+          prompt: (lbl, cb) => {
+            writeTerminalTextLine(lbl);
+            activePromptCallback = cb;
+          }
+        }, () => {
+          terminalIsInteractive = false;
+          activePromptCallback = null;
+          writeTerminalTextLine("Process exited with code 0.");
+          writeTerminalTextLine("");
+        });
+      }, 400);
+      return;
+    }
+
     const parts = rawCmd.split(/\s+/);
     const command = parts[0].toLowerCase();
     const args = parts.slice(1);
 
-    const topic = topicsData.find(t => t.id === activeTopicId);
-    const currentFilename = getTopicFilename(topic);
-
-    if (command === "clear") {
-      clearTerminal();
-    } 
-    else if (command === "help") {
-      writeTerminalTextLine("Operating Systems Lab Simulator Help:");
-      writeTerminalTextLine("  gedit <filename>  - Opens the file in the editor");
-      writeTerminalTextLine("  gcc <file> -o a   - Compiles the file (reads saved version)");
-      writeTerminalTextLine("  ./a               - Runs the compiled binary");
-      writeTerminalTextLine("  clear             - Clears the terminal screen");
-    } 
-    else if (command === "gedit") {
-      const filenameArg = args[0] || "";
-      if (!filenameArg) {
-        writeTerminalTextLine("gedit: missing file operand");
-        return;
-      }
-      
-      // Auto-focus the editor
-      setWorkspaceTab("gedit");
-      writeTerminalTextLine(`Opened editor tab for ${currentFilename}`);
-    } 
-    else if (command === "gcc") {
-      // Expecting: gcc filename.c -o a
-      const fileArg = args[0] || "";
-      const hasOutFlag = args.includes("-o");
-      const outVal = args[args.indexOf("-o") + 1] || "";
-
-      if (!fileArg) {
-        writeTerminalTextLine("gcc: fatal error: no input files");
-        return;
-      }
-
-      if (fileArg !== currentFilename) {
-        writeTerminalTextLine(`gcc: error: ${fileArg}: No such file or directory`);
-        return;
-      }
-
-      if (!hasOutFlag || outVal !== "a") {
-        writeTerminalTextLine("gcc: error: compilation requires output flag '-o a'");
-        return;
-      }
-
-      // Perform compile check on SAVED code
-      writeTerminalTextLine(`compiling ${fileArg}...`);
-      
-      // Warn if user has unsaved edits in Gedit
-      const isDirty = editorCode[activeTopicId] !== savedCode[activeTopicId];
-      if (isDirty) {
-        writeTerminalTextLine("warning: You have unsaved changes in Gedit. Compiling previously saved version!");
-      }
-
-      setTimeout(() => {
-        const result = compiler.compile(activeTopicId, savedCode[activeTopicId]);
-        if (result.success) {
-          result.warnings.forEach(w => {
-            writeTerminalTextLine(`${fileArg}:${w.line}: warning: ${w.msg}`);
-          });
-          // standard gcc displays nothing on clean compile success
-          isCompiled[activeTopicId] = true;
-          compiledTopicId[activeTopicId] = activeTopicId;
-        } else {
-          result.errors.forEach(err => {
-            writeTerminalTextLine(`${fileArg}:${err.line}: ${err.msg}`);
-          });
-          isCompiled[activeTopicId] = false;
-        }
-      }, 500);
-    } 
-    else if (rawCmd === "./a") {
-      if (!isCompiled[activeTopicId] || compiledTopicId[activeTopicId] !== activeTopicId) {
-        writeTerminalTextLine("bash: ./a: No such file or directory (did you compile it?)");
-        return;
-      }
-
-      // Execute interactive simulator
-      writeTerminalTextLine("Executing binary image ./a...");
-      setTimeout(() => {
-        compiler.runSimulation(activeTopicId, terminalInterface, () => {
-          terminalIsInteractive = false;
-          activePromptCallback = null;
-          writeTerminalTextLine("Process exited with code 0.");
-        });
-      }, 400);
-    } 
-    else {
+    if (commands[command]) {
+      commands[command](args);
+    } else {
       writeTerminalTextLine(`bash: ${command}: command not found. Type 'help' to review commands.`);
     }
   }
@@ -476,6 +628,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function triggerAutoRunSequence() {
     setWorkspaceTab("terminal");
     const topic = topicsData.find(t => t.id === activeTopicId);
+    if (!topic) return;
     const filename = getTopicFilename(topic);
 
     writeTerminalTextLine("\n[Auto-Run Helper Triggered]");
@@ -487,8 +640,9 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         setWorkspaceTab("terminal");
         // Save automatically if they click Run
-        savedCode[activeTopicId] = editorCode[activeTopicId];
-        docCodeCode.innerText = savedCode[activeTopicId];
+        virtualFS[filename] = editorTextarea.value;
+        savedCode[activeTopicId] = editorTextarea.value;
+        docCodeCode.innerText = editorTextarea.value;
         updateGeditFilenameTabState();
         
         executeShellCommand(`gcc ${filename} -o a`);
@@ -549,7 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // --- Click Listeners for Sidebar & Headers ---
   
   copyBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(savedCode[activeTopicId]).then(() => {
+    navigator.clipboard.writeText(virtualFS[activeFilename] || "").then(() => {
       const prev = copyBtn.innerText;
       copyBtn.innerText = "Copied!";
       setTimeout(() => {
@@ -563,6 +717,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   tabBtnSyntax.addEventListener("click", () => setHelpTab("syntax"));
   tabBtnShortcuts.addEventListener("click", () => setHelpTab("shortcuts"));
+  tabBtnGuide.addEventListener("click", () => setHelpTab("guide"));
 
   // Mobile Top Menu / Backdrop Drawer Actions
   mobileMenuBtn.addEventListener("click", openSidebarDrawer);
@@ -582,9 +737,7 @@ document.addEventListener("DOMContentLoaded", () => {
   wsCompileBtn.addEventListener("click", () => {
     setMobileTab("ide");
     setWorkspaceTab("terminal");
-    const topic = topicsData.find(t => t.id === activeTopicId);
-    const filename = getTopicFilename(topic);
-    executeShellCommand(`gcc ${filename} -o a`);
+    executeShellCommand(`gcc ${activeFilename} -o a`);
   });
 
   wsRunBtn.addEventListener("click", () => {

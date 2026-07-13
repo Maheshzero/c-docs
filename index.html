@@ -128,6 +128,7 @@
           <div class="tabs-header">
             <button id="tab-btn-syntax"    class="tab-btn active">Syntax Reference</button>
             <button id="tab-btn-shortcuts" class="tab-btn">How to Run</button>
+            <button id="tab-btn-guide"     class="tab-btn">Sandbox Guide</button>
           </div>
 
           <div id="tab-content-syntax" class="tab-content active">
@@ -137,6 +138,34 @@
 
           <div id="tab-content-shortcuts" class="tab-content">
             <div id="shortcuts-panel-content"></div>
+          </div>
+
+          <div id="tab-content-guide" class="tab-content">
+            <div class="guide-panel-content">
+              <h3>🎓 Linux &amp; Sandbox Simulation Playground</h3>
+              <p>This workspace operates as a full-featured mock Linux terminal and code editor. You can write custom programs, compile them, and view their execution outputs directly in the terminal!</p>
+              
+              <h4>📂 Virtual Filesystem Commands</h4>
+              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: square;">
+                <li><code>ls</code>: Lists all C source files and compiled binaries (highlighted in green).</li>
+                <li><code>gedit &lt;filename&gt;.c</code>: Opens the file in Gedit. If the file does not exist, a new empty file is created.</li>
+                <li><code>cat &lt;filename&gt;</code>: Outputs the raw text content of the file directly to the terminal.</li>
+                <li><code>rm &lt;filename&gt;</code>: Deletes the file from the virtual filesystem.</li>
+              </ul>
+              
+              <h4>⚙️ Compilation &amp; Execution</h4>
+              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: square;">
+                <li><code>gcc &lt;filename&gt;.c -o a</code>: Compiles the source file into an output binary named <code>a</code>.</li>
+                <li><code>./a</code>: Executes the compiled binary inside the terminal shell.</li>
+                <li><strong>Dirty State Tracking</strong>: If you edit code, Gedit shows a modified indicator (<code>*</code>). Compiling a file while it has unsaved changes warns you that GCC is compiling the previously saved version on disk!</li>
+              </ul>
+              
+              <h4>🧪 Generic Code Sandbox</h4>
+              <p>When you compile a custom file (e.g. <code>sandbox.c</code>), running <code>./a</code> dynamically scans your code. If it detects POSIX operations like <code>fork()</code>, shared memory, message queues, or multithreading, it simulates their runtime executions dynamically!</p>
+              
+              <h4 style="margin-top: 10px;">⚠️ Compiler Validations</h4>
+              <p>The compiler checks for common pitfalls: missing semicolons (<code>;</code>) throw syntax errors, and missing headers (e.g. <code>&lt;unistd.h&gt;</code> for <code>fork</code> or <code>&lt;sys/shm.h&gt;</code> for shared memory) trigger implicit declaration warnings.</p>
+            </div>
           </div>
         </div>
 
