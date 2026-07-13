@@ -583,16 +583,17 @@ document.addEventListener("DOMContentLoaded", () => {
   mobileTabIde.addEventListener("click", () => setMobileTab("ide"));
 
   function setMobileTab(tab) {
+    const contentArea = document.querySelector(".content-area");
     if (tab === "docs") {
       mobileTabDocs.classList.add("active");
       mobileTabIde.classList.remove("active");
-      document.querySelector(".doc-panel").style.display = "block";
-      document.querySelector(".right-panel").style.display = "none";
+      contentArea.classList.add("view-docs");
+      contentArea.classList.remove("view-ide");
     } else {
       mobileTabDocs.classList.remove("active");
       mobileTabIde.classList.add("active");
-      document.querySelector(".doc-panel").style.display = "none";
-      document.querySelector(".right-panel").style.display = "flex";
+      contentArea.classList.add("view-ide");
+      contentArea.classList.remove("view-docs");
       // Focus input field when entering terminal tab
       if (activeWorkspaceTab === "terminal") {
         terminalInput.focus();
