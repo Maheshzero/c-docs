@@ -42,6 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Sizer resize handle
   const tcResizeHandle = document.getElementById("tc-resize-handle");
+  const themeToggleBtn = document.getElementById("theme-toggle-btn");
 
   // --- State Variables ---
   let activeTopicId = "fork-basic";
@@ -618,6 +619,18 @@ document.addEventListener("DOMContentLoaded", () => {
   // Focus terminal input if clicking anywhere inside the terminal area
   viewTerminal.addEventListener("click", () => {
     terminalInput.focus();
+  });
+
+  // Theme Toggle (Light/Dark mode)
+  const savedTheme = localStorage.getItem("theme") || "dark";
+  if (savedTheme === "light") {
+    document.body.classList.add("light-theme");
+  }
+
+  themeToggleBtn.addEventListener("click", () => {
+    document.body.classList.toggle("light-theme");
+    const isLight = document.body.classList.contains("light-theme");
+    localStorage.setItem("theme", isLight ? "light" : "dark");
   });
 
   // Initialize Populations

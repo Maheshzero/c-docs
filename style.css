@@ -59,6 +59,45 @@
   --radius:      3px;
 }
 
+/* ------------ LIGHT THEME ------------ */
+body.light-theme {
+  --bg:          #f3f4f6;
+  --bg-1:        #ffffff;
+  --bg-2:        #eaeaea;
+  --bg-3:        #e0e0e0;
+  --border:      #d1d5db;
+  --border-mid:  #9ca3af;
+
+  /* Text */
+  --text:        #111827;   /* dark grey */
+  --text-dim:    #4b5563;   /* medium grey */
+  --text-faint:  #9ca3af;   /* light grey */
+
+  /* Accents */
+  --accent:      #2563eb;   /* blue accent */
+  --accent-dim:  #3b82f6;
+
+  /* IDE specific */
+  --ide-bg:      #f9fafb;
+  --ide-border:  #d1d5db;
+  --ide-header:  #eaeaea;
+  --ide-cursor:  #111827;
+
+  /* Functional */
+  --success:     #16a34a;
+  --danger:      #dc2626;
+  --warn-bg:     #fef3c7;
+  --warn-border: #f59e0b;
+  --warn-text:   #b45309;
+
+  /* Terminal overrides */
+  --term-bg:     #ffffff;
+  --term-text:   #1f2937;
+  --term-dim:    #6b7280;
+  --term-input:  #111827;
+  --term-border: #d1d5db;
+}
+
 html, body {
   height: 100%;
   overflow: hidden;
@@ -1068,3 +1107,107 @@ html, body {
     padding-right: 6px !important;
   }
 }
+
+/* ------------ THEME TOGGLE & FOOTER ------------ */
+.theme-toggle-btn {
+  background: transparent;
+  border: none;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: transform 0.1s;
+  user-select: none;
+}
+
+.theme-toggle-btn:hover {
+  transform: scale(1.15);
+}
+
+.sidebar-footer {
+  font-size: 9px;
+  color: var(--text-dim);
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  line-height: 1.4;
+  flex-shrink: 0;
+  text-align: left;
+}
+
+/* ------------ LIGHT THEME COMPONENT OVERRIDES ------------ */
+body.light-theme .terminal-shell {
+  background: #ffffff !important;
+  color: #1f2937 !important;
+  border: 1px solid #d1d5db;
+}
+
+body.light-theme .terminal-input {
+  color: #1f2937 !important;
+  caret-color: #1f2937 !important;
+}
+
+body.light-theme .terminal-prompt {
+  color: #2563eb !important;
+}
+
+body.light-theme .gedit-window {
+  background: #f3f4f6 !important;
+}
+
+body.light-theme .gedit-header {
+  background: #e5e7eb !important;
+  border-bottom: 1px solid #d1d5db !important;
+}
+
+body.light-theme .gedit-tab {
+  color: #111827 !important;
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-bottom: none !important;
+}
+
+body.light-theme .gedit-save-btn {
+  background: #e5e7eb !important;
+  color: #111827 !important;
+  border: 1px solid #9ca3af !important;
+}
+
+body.light-theme .gedit-save-btn:hover {
+  background: #d1d5db !important;
+  color: #000000 !important;
+}
+
+body.light-theme .gedit-editor {
+  background: #ffffff !important;
+  color: #111827 !important;
+  caret-color: #000000 !important;
+  border-top: 1px solid #d1d5db !important;
+}
+
+body.light-theme .tab-content {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-top: none !important;
+}
+
+body.light-theme .tab-btn.active {
+  background: #ffffff !important;
+  border: 1px solid #d1d5db !important;
+  border-bottom: none !important;
+}
+
+body.light-theme .tab-btn {
+  background: #f3f4f6 !important;
+  border: 1px solid transparent;
+  border-bottom: 1px solid #d1d5db;
+  color: #4b5563 !important;
+}
+
+body.light-theme .tab-btn:hover {
+  background: #eaeaea !important;
+}
+
+body.light-theme .tabs-header {
+  border-bottom: 1px solid #d1d5db !important;
+}
+
