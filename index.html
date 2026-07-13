@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>C Docs — OS Lab Reference</title>
+  <meta name="description" content="Interactive documentation and Turbo C simulator for Operating Systems lab programs. Includes fork, exec, IPC, memory allocation, and page replacement algorithms." />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       MAIN LAYOUT
+  ============================================================ -->
+  <div class="app-shell">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-brand">C Docs</span>
+        <span class="sidebar-sub">OS Lab Reference</span>
+      </div>
+      <nav>
+        <ul id="sidebar-menu-list" class="sidebar-menu"></ul>
+      </nav>
+    </aside>
+
+    <!-- MAIN CONTENT AREA -->
+    <main class="content-area">
+
+      <!-- LEFT: DOCUMENTATION PANEL -->
+      <section class="doc-panel" id="doc-panel">
+        <div class="doc-header">
+          <span id="doc-category" class="doc-category">Category</span>
+          <h1 id="doc-title" class="doc-title">Topic Title</h1>
+          <p id="doc-description" class="doc-description">Description goes here.</p>
+        </div>
+
+        <!-- Mismatch / Warning Alert -->
+        <div id="compatibility-alert" class="compat-alert" style="display:none;">
+          <span class="alert-icon">⚠</span>
+          <span id="warning-text"></span>
+        </div>
+
+        <!-- Doc body: deconstruction + explanation + compatibility -->
+        <div id="doc-body" class="doc-body"></div>
+
+        <!-- Code Block -->
+        <div class="code-block-wrapper">
+          <div class="code-block-header">
+            <span id="doc-code-filename" class="code-filename">filename.c</span>
+            <button id="copy-code-btn" class="copy-btn">Copy</button>
+          </div>
+          <pre class="code-block"><code id="doc-code-code"></code></pre>
+        </div>
+      </section>
+
+      <!-- RIGHT: IDE + TABS -->
+      <aside class="right-panel">
+
+        <!-- TURBO C IDE EDITOR -->
+        <div class="tc-ide">
+          <!-- Title bar -->
+          <div class="tc-titlebar">
+            <span>Turbo C++ 3.0</span>
+            <span id="tc-file-title" class="tc-filetitle">NONAME00.C</span>
+          </div>
+
+          <!-- Menu bar -->
+          <div class="tc-menubar">
+            <span>File</span>
+            <span>Edit</span>
+            <span id="tc-menu-compile" class="tc-menu-item" title="Alt+F9">Compile</span>
+            <span id="tc-menu-run" class="tc-menu-item" title="Ctrl+F9">Run</span>
+            <span>Debug</span>
+            <span>Options</span>
+          </div>
+
+          <!-- Editor textarea -->
+          <textarea id="editor-textarea" class="tc-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+
+          <!-- Message window (compile output) -->
+          <div id="message-window" class="tc-message-window" style="display:none;">
+            <div class="tc-message-titlebar">
+              <span>Message</span>
+              <button onclick="document.getElementById('message-window').style.display='none'">×</button>
+            </div>
+            <div id="message-window-content" class="tc-message-content"></div>
+          </div>
+
+          <!-- Status bar -->
+          <div class="tc-statusbar">
+            <button id="tc-status-help"    class="tc-status-btn">F1 Help</button>
+            <button id="tc-status-compile" class="tc-status-btn">Alt-F9 Compile</button>
+            <button id="tc-status-run"     class="tc-status-btn">Ctrl-F9 Run</button>
+            <button id="tc-status-save"    class="tc-status-btn">F2 Save</button>
+            <button id="tc-status-open"    class="tc-status-btn">F3 Open</button>
+            <button id="tc-status-screen"  class="tc-status-btn">Alt-F5 Screen</button>
+          </div>
+        </div>
+
+        <!-- TABS: SYNTAX / SHORTCUTS -->
+        <div class="tabs-panel">
+          <div class="tabs-header">
+            <button id="tab-btn-syntax"    class="tab-btn active">Syntax Reference</button>
+            <button id="tab-btn-shortcuts" class="tab-btn">Shortcuts & Notes</button>
+          </div>
+
+          <div id="tab-content-syntax" class="tab-content active">
+            <p id="syntax-panel-desc" class="tab-intro"></p>
+            <div id="syntax-items-list"></div>
+          </div>
+
+          <div id="tab-content-shortcuts" class="tab-content">
+            <div id="shortcuts-panel-content"></div>
+          </div>
+        </div>
+
+      </aside>
+    </main>
+  </div>
+
+  <!-- ============================================================
+       DOSBOX TERMINAL OVERLAY
+  ============================================================ -->
+  <div id="terminal-window" class="terminal-overlay" style="display:none;">
+    <div class="terminal-titlebar">
+      <span>DOSBox — Program Output</span>
+      <button id="terminal-close-btn" class="terminal-close-btn">✕ Close</button>
+    </div>
+    <div id="terminal-lines" class="terminal-lines"></div>
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS
+  ============================================================ -->
+  <script src="data.js"></script>
+  <script src="compiler.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
