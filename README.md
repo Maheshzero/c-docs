@@ -1,6 +1,9 @@
-# C-Docs — OS Lab Reference
+# os-uce — OS Lab Reference
 
 An interactive, responsive C documentation and Linux command-line terminal simulator designed for Operating Systems lab programs at the University College of Engineering (UCE), Kariavattom.
+
+> [!NOTE]
+> This entire web application interface, documentation dataset, and terminal simulation engine was fully generated via **Antigravity** (Google DeepMind's Advanced Agentic Coding AI).
 
 ---
 
