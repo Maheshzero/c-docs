@@ -11,18 +11,20 @@ document.addEventListener("DOMContentLoaded", () => {
   const compatibilityAlert = document.getElementById("compatibility-alert");
   const warningText = document.getElementById("warning-text");
 
-  // Turbo C IDE elements
+  // Gedit & Terminal Workspace Elements
+  const workspaceTabTerminal = document.getElementById("workspace-tab-terminal");
+  const workspaceTabGedit = document.getElementById("workspace-tab-gedit");
+  const viewTerminal = document.getElementById("view-terminal");
+  const viewGedit = document.getElementById("view-gedit");
+  
+  const geditFilenameTab = document.getElementById("gedit-filename-tab");
+  const geditSaveBtn = document.getElementById("gedit-save-btn");
   const editorTextarea = document.getElementById("editor-textarea");
-  const tcFileTitle = document.getElementById("tc-file-title");
-  const messageWindow = document.getElementById("message-window");
-  const messageWindowContent = document.getElementById("message-window-content");
 
-  // DOSBox Terminal elements
-  const terminalWindow = document.getElementById("terminal-window");
   const terminalLines = document.getElementById("terminal-lines");
-  const terminalCloseBtn = document.getElementById("terminal-close-btn");
+  const terminalInput = document.getElementById("terminal-input");
 
-  // Tab elements
+  // Bottom Tabs Panel
   const tabBtnSyntax = document.getElementById("tab-btn-syntax");
   const tabBtnShortcuts = document.getElementById("tab-btn-shortcuts");
   const tabContentSyntax = document.getElementById("tab-content-syntax");
@@ -30,21 +32,39 @@ document.addEventListener("DOMContentLoaded", () => {
   const syntaxItemsList = document.getElementById("syntax-items-list");
   const shortcutsPanelContent = document.getElementById("shortcuts-panel-content");
 
-  // Menu/status actions
-  const menuCompile = document.getElementById("tc-menu-compile");
-  const menuRun = document.getElementById("tc-menu-run");
-  const btnHelp = document.getElementById("tc-status-help");
-  const btnSave = document.getElementById("tc-status-save");
-  const btnOpen = document.getElementById("tc-status-open");
-  const btnCompile = document.getElementById("tc-status-compile");
-  const btnRun = document.getElementById("tc-status-run");
-  const btnScreen = document.getElementById("tc-status-screen");
+  // Mobile navigation
+  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
+  const mobileRunBtn = document.getElementById("mobile-run-btn");
+  const mobileTabDocs = document.getElementById("mobile-tab-docs");
+  const mobileTabIde = document.getElementById("mobile-tab-ide");
+  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
 
-  // State variables
-  let activeTopicId = "fcfs-sched";
-  let activeTab = "syntax";
-  let terminalIsRunning = false;
-  let lastOutputLines = [];
+  // Sizer resize handle
+  const tcResizeHandle = document.getElementById("tc-resize-handle");
+
+  // --- State Variables ---
+  let activeTopicId = "fork-basic";
+  let activeWorkspaceTab = "terminal";
+  let activeHelpTab = "syntax";
+
+  // Code state tracking (saved vs current draft)
+  const savedCode = {};
+  const editorCode = {};
+  const isCompiled = {};
+  const compiledTopicId = {};
+
+  // Terminal interactive state
+  let terminalIsInteractive = false;
+  let activePromptCallback = null;
+  const commandHistory = [];
+  let historyIndex = -1;
+
+  // Initialize file states
+  topicsData.forEach(topic => {
+    savedCode[topic.id] = topic.code;
+    editorCode[topic.id] = topic.code;
+    isCompiled[topic.id] = false;
+  });
 
   // --- Populate UI Panels ---
 
@@ -76,6 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
       item.addEventListener("click", (e) => {
         const topicId = e.target.getAttribute("data-id");
         selectTopic(topicId);
+        // On mobile, close drawer on item selection
+        closeSidebarDrawer();
       });
     });
   }
@@ -96,56 +118,68 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("syntax-panel-desc").innerText = syntaxesData.description;
   }
 
-  // 3. Shortcuts & Mismatch Tab population
+  // 3. How to Run Tab population
   function populateShortcutsTab() {
     let shortcutsHTML = `
-      <p class="shortcut-intro">${shortcutsData.description}</p>
-      <h4>Keyboard Shortcuts</h4>
-      <div class="shortcut-grid">
+      <div class="shortcuts-section">
+        <h4>Steps to Run Code in Linux Terminal</h4>
+        <table class="shortcuts-table">
+          <thead>
+            <tr>
+              <th>Command</th>
+              <th>Action</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
-
-    shortcutsData.shortcuts.forEach(s => {
+    
+    shortcutsData.shortcuts.forEach(item => {
       shortcutsHTML += `
-        <div class="shortcut-key">${s.key}</div>
-        <div class="shortcut-details">
-          <h5>${s.action}</h5>
-          <p>${s.desc}</p>
-        </div>
+        <tr>
+          <td><code class="terminal-cmd-highlight">${item.key}</code></td>
+          <td><strong>${item.action}</strong></td>
+          <td>${item.desc}</td>
+        </tr>
       `;
     });
 
     shortcutsHTML += `
+          </tbody>
+        </table>
       </div>
-      <h4 style="margin-top:24px; margin-bottom:12px;">DOSBox Mismatches & Errors</h4>
+      <hr class="section-divider" />
+      <div class="shortcuts-section">
+        <h4>Linux GCC Environment Notes</h4>
     `;
 
-    shortcutsData.mismatches.forEach(m => {
+    shortcutsData.mismatches.forEach(item => {
       shortcutsHTML += `
-        <div class="mismatch-item">
-          <h5>${m.title}</h5>
-          <p>${m.desc}</p>
+        <div class="mismatch-card">
+          <h5>${item.title}</h5>
+          <p>${item.desc}</p>
         </div>
       `;
     });
 
+    shortcutsHTML += `</div>`;
     shortcutsPanelContent.innerHTML = shortcutsHTML;
   }
 
-  // --- Core Actions ---
+  // Helper: Escape HTML characters
+  function escapeHTML(str) {
+    return str.replace(/&/g, "&amp;")
+              .replace(/</g, "&lt;")
+              .replace(/>/g, "&gt;")
+              .replace(/"/g, "&quot;")
+              .replace(/'/g, "&#039;");
+  }
 
-  // Selects and renders a topic's documentation
+  // --- Topic Selection ---
   function selectTopic(topicId) {
     activeTopicId = topicId;
-    
-    // Close mobile drawer if open
-    const sidebarEl = document.querySelector(".sidebar");
-    const backdropEl = document.getElementById("sidebar-backdrop");
-    if (sidebarEl && sidebarEl.classList.contains("open")) {
-      sidebarEl.classList.remove("open");
-      if (backdropEl) backdropEl.classList.remove("active");
-    }
 
-    // Update sidebar styles
+    // Highlight menu
     document.querySelectorAll(".menu-item").forEach(item => {
       if (item.getAttribute("data-id") === topicId) {
         item.classList.add("active");
@@ -162,68 +196,58 @@ document.addEventListener("DOMContentLoaded", () => {
     docTitle.innerText = topic.title;
     docDesc.innerText = topic.description;
     
-    // Deconstruction & explanation combination
-    docBody.innerHTML = `
-      ${topic.deconstruction}
-      ${topic.explanation}
-      ${topic.compatibility}
-    `;
+    // Assemble body sections
+    let bodyHTML = "";
+    if (topic.deconstruction) bodyHTML += topic.deconstruction;
+    if (topic.explanation) bodyHTML += topic.explanation;
+    if (topic.compatibility) bodyHTML += topic.compatibility;
+    docBody.innerHTML = bodyHTML;
 
-    // Bind syntax links dynamically
-    bindSyntaxHyperlinks();
+    // Update file card code representation
+    const filename = getTopicFilename(topic);
+    docCodeFilename.innerText = filename;
+    docCodeCode.innerText = savedCode[topicId];
 
-    // Code files settings
-    let extension = ".c";
-    let baseFilename = topic.id.replace("-", "_").toUpperCase() + extension;
-    docCodeFilename.innerText = baseFilename.toLowerCase();
-    docCodeCode.innerText = topic.code;
+    // Update Gedit editor contents
+    editorTextarea.value = editorCode[topicId];
+    updateGeditFilenameTabState();
+  }
 
-    // Load into Editor
-    editorTextarea.value = topic.code;
-    tcFileTitle.innerText = baseFilename;
+  function getTopicFilename(topic) {
+    return topic.title.toLowerCase().replace(/[^a-z0-9]/g, "_") + ".c";
+  }
 
-    // Hide message window on topic change
-    messageWindow.style.display = "none";
+  function updateGeditFilenameTabState() {
+    const topic = topicsData.find(t => t.id === activeTopicId);
+    if (!topic) return;
+    const filename = getTopicFilename(topic);
+    const isDirty = editorCode[activeTopicId] !== savedCode[activeTopicId];
+    geditFilenameTab.innerText = (isDirty ? "*" : "") + filename;
+  }
 
-    // Set warnings
-    if (topic.mismatch_alert) {
-      compatibilityAlert.style.display = "flex";
-      warningText.innerText = topic.mismatch_alert;
+  // --- Tab Swapping (Workspace & Bottom Panel) ---
+
+  function setWorkspaceTab(tab) {
+    activeWorkspaceTab = tab;
+    if (tab === "terminal") {
+      workspaceTabTerminal.classList.add("active");
+      workspaceTabGedit.classList.remove("active");
+      viewTerminal.classList.add("active");
+      viewGedit.classList.remove("active");
+      // Auto-focus terminal input
+      terminalInput.focus();
     } else {
-      compatibilityAlert.style.display = "none";
+      workspaceTabTerminal.classList.remove("active");
+      workspaceTabGedit.classList.add("active");
+      viewTerminal.classList.remove("active");
+      viewGedit.classList.add("active");
+      editorTextarea.focus();
     }
-
-    // Scroll doc view back to top
-    document.getElementById("doc-panel").scrollTop = 0;
   }
 
-  // Intercept and bind clicks inside dynamic documentation HTML
-  function bindSyntaxHyperlinks() {
-    document.querySelectorAll(".syntax-link").forEach(link => {
-      link.addEventListener("click", (e) => {
-        e.preventDefault();
-        const targetId = link.getAttribute("href").substring(1);
-        switchToTab("syntax");
-        
-        // Find target syntax card and scroll to it
-        const targetCard = document.getElementById(targetId);
-        if (targetCard) {
-          targetCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
-          
-          // Highlights momentarily
-          targetCard.classList.add("highlight");
-          setTimeout(() => {
-            targetCard.classList.remove("highlight");
-          }, 1500);
-        }
-      });
-    });
-  }
-
-  // Handle Tab Switch
-  function switchToTab(tabName) {
-    activeTab = tabName;
-    if (tabName === "syntax") {
+  function setHelpTab(tab) {
+    activeHelpTab = tab;
+    if (tab === "syntax") {
       tabBtnSyntax.classList.add("active");
       tabBtnShortcuts.classList.remove("active");
       tabContentSyntax.classList.add("active");
@@ -236,381 +260,357 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Copy code utility
-  copyBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(docCodeCode.innerText).then(() => {
-      const origText = copyBtn.innerHTML;
-      copyBtn.innerHTML = `<span style="color:var(--success);">✓ Copied!</span>`;
-      setTimeout(() => {
-        copyBtn.innerHTML = origText;
-      }, 2000);
-    });
+  // --- Gedit Editor Handlers ---
+
+  editorTextarea.addEventListener("input", (e) => {
+    editorCode[activeTopicId] = e.target.value;
+    updateGeditFilenameTabState();
   });
 
-  // --- Compiler Actions ---
-
-  // Trigger compilation check
-  function triggerCompile() {
-    const code = editorTextarea.value;
-    const result = compiler.compile(activeTopicId, code);
+  geditSaveBtn.addEventListener("click", () => {
+    savedCode[activeTopicId] = editorCode[activeTopicId];
     
-    messageWindowContent.innerHTML = "";
+    // Reset compilation flag since files changed
+    isCompiled[activeTopicId] = false;
     
-    if (result.success) {
-      messageWindowContent.innerHTML = `
-        <div style="color: var(--success); font-weight: bold; margin-bottom: 4px;">Compilation Successful</div>
-        <div>File: ${tcFileTitle.innerText}</div>
-        <div>Code size: ${code.length} bytes</div>
-        <div style="margin-top: 8px; color: var(--text-dim);">Press ESC to dismiss this window.</div>
-      `;
-      messageWindow.style.display = "flex";
-      return true;
-    } else {
-      let errHTML = `
-        <div style="color: var(--danger); font-weight: bold; margin-bottom: 6px;">
-          Compilation Failed: ${result.errors.length} Error(s)
-        </div>
-      `;
-      result.errors.forEach(err => {
-        errHTML += `
-          <div class="tc-error-line" data-line="${err.line}">
-            Line ${err.line}: ${err.msg}
-          </div>
-        `;
-      });
-      messageWindowContent.innerHTML = errHTML;
-      messageWindow.style.display = "flex";
-
-      // Bind error line focus clicks
-      document.querySelectorAll(".tc-error-line").forEach(el => {
-        el.addEventListener("click", () => {
-          const lineNum = parseInt(el.getAttribute("data-line"));
-          focusEditorOnLine(lineNum);
-        });
-      });
-      return false;
-    }
-  }
-
-  // Highlights/Focuses cursor on line with error
-  function focusEditorOnLine(lineNum) {
-    const text = editorTextarea.value;
-    const lines = text.split("\n");
-    let charOffset = 0;
+    updateGeditFilenameTabState();
     
-    for (let i = 0; i < Math.min(lineNum - 1, lines.length); i++) {
-      charOffset += lines[i].length + 1;
-    }
+    // Update code viewer in doc panel
+    docCodeCode.innerText = savedCode[activeTopicId];
 
-    editorTextarea.focus();
-    editorTextarea.setSelectionRange(charOffset, charOffset + (lines[lineNum - 1] ? lines[lineNum - 1].length : 0));
-  }
-
-  // Emulates Running Program
-  function triggerRun() {
-    // Compile first
-    const isCompiled = triggerCompile();
-    if (!isCompiled) return; // Stop if compile fails
-
-    // Wait a brief second to simulate compilation flash, then open terminal
+    // Show temporary saved indicator
+    const prevText = geditSaveBtn.innerText;
+    geditSaveBtn.innerText = "Saved!";
+    geditSaveBtn.style.backgroundColor = "#2e7d32";
     setTimeout(() => {
-      messageWindow.style.display = "none";
-      terminalWindow.style.display = "flex";
-      terminalIsRunning = true;
-      
-      // Start emulation script
-      compiler.runSimulation(activeTopicId, terminalController, () => {
-        terminalIsRunning = false;
-        terminalController.writeLine("");
-        terminalController.writeLine("Process completed. Press any key to return to editor...", "cursor-blink");
-      });
-    }, 800);
+      geditSaveBtn.innerText = prevText;
+      geditSaveBtn.style.backgroundColor = "";
+    }, 1000);
+
+    writeTerminalTextLine(`[Disk] Saved file ${getTopicFilename(topicsData.find(t => t.id === activeTopicId))}`);
+  });
+
+  // --- Terminal Command Engine ---
+
+  function writeTerminalTextLine(text) {
+    const line = document.createElement("div");
+    line.className = "terminal-line";
+    line.innerText = text;
+    terminalLines.appendChild(line);
+    // Scroll to bottom
+    terminalLines.scrollTop = terminalLines.scrollHeight;
   }
 
-  // --- Terminal Controller API ---
-  const terminalController = {
+  function clearTerminal() {
+    terminalLines.innerHTML = "";
+  }
+
+  // Mock terminal interface for simulations
+  const terminalInterface = {
+    writeLine: function(text) {
+      writeTerminalTextLine(text);
+    },
     clear: function() {
-      terminalLines.innerHTML = "";
+      clearTerminal();
     },
-    writeLine: function(text, className = "") {
-      const line = document.createElement("div");
-      line.className = `terminal-line ${className}`;
-      line.innerText = text;
-      terminalLines.appendChild(line);
-      terminalLines.scrollTop = terminalLines.scrollHeight;
-      
-      // Preserve terminal buffer for user screen view (Alt+F5)
-      lastOutputLines.push({text, className});
-    },
-    prompt: function(message, callback) {
-      const promptLine = document.createElement("div");
-      promptLine.className = "terminal-input-line";
-      
-      const promptText = document.createElement("span");
-      promptText.className = "terminal-prompt";
-      promptText.innerText = message;
-      
-      const input = document.createElement("input");
-      input.type = "text";
-      input.className = "terminal-input";
-      
-      promptLine.appendChild(promptText);
-      promptLine.appendChild(input);
-      terminalLines.appendChild(promptLine);
-      terminalLines.scrollTop = terminalLines.scrollHeight;
-      
-      input.focus();
-      
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          const value = input.value;
-          // Freeze prompt line with value
-          promptLine.innerHTML = "";
-          promptText.innerText = message + value;
-          promptLine.appendChild(promptText);
-          
-          lastOutputLines.push({text: message + value, className: ""});
-          callback(value);
-        }
-      });
+    prompt: function(text, callback) {
+      writeTerminalTextLine(text);
+      terminalIsInteractive = true;
+      activePromptCallback = callback;
     }
   };
 
-  // Close Terminal
-  function closeTerminal() {
-    terminalWindow.style.display = "none";
-    terminalIsRunning = false;
-    editorTextarea.focus();
-  }
+  terminalInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      const val = terminalInput.value;
+      terminalInput.value = "";
+      
+      if (terminalIsInteractive) {
+        // Feed direct input to active algorithm prompt callback
+        writeTerminalTextLine(`user@uce-lab:~/os_lab$ ${val}`);
+        if (activePromptCallback) {
+          const cb = activePromptCallback;
+          // Deactivate prompt state first so callback can re-prompt if needed
+          terminalIsInteractive = false;
+          activePromptCallback = null;
+          cb(val);
+        }
+      } else {
+        // Execute normal shell command
+        executeShellCommand(val);
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (commandHistory.length > 0 && historyIndex < commandHistory.length - 1) {
+        historyIndex++;
+        terminalInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+      }
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (historyIndex > 0) {
+        historyIndex--;
+        terminalInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
+      } else if (historyIndex === 0) {
+        historyIndex = -1;
+        terminalInput.value = "";
+      }
+    }
+  });
 
-  terminalCloseBtn.addEventListener("click", closeTerminal);
+  function executeShellCommand(cmdString) {
+    const rawCmd = cmdString.trim();
+    if (rawCmd) {
+      commandHistory.push(rawCmd);
+    }
+    historyIndex = -1;
 
-  // Toggle user screen view (Alt+F5 emulation)
-  function toggleUserScreen() {
-    if (terminalWindow.style.display === "flex") {
-      closeTerminal();
-    } else {
-      terminalWindow.style.display = "flex";
-      terminalController.clear();
-      lastOutputLines.forEach(l => {
-        const line = document.createElement("div");
-        line.className = `terminal-line ${l.className}`;
-        line.innerText = l.text;
-        terminalLines.appendChild(line);
-      });
-      terminalLines.scrollTop = terminalLines.scrollHeight;
-      terminalController.writeLine("");
-      terminalController.writeLine("[Viewing User Output Screen - Press ESC to Return]");
+    // Write command prefix to log
+    writeTerminalTextLine(`user@uce-lab:~/os_lab$ ${rawCmd}`);
+
+    if (!rawCmd) return;
+
+    const parts = rawCmd.split(/\s+/);
+    const command = parts[0].toLowerCase();
+    const args = parts.slice(1);
+
+    const topic = topicsData.find(t => t.id === activeTopicId);
+    const currentFilename = getTopicFilename(topic);
+
+    if (command === "clear") {
+      clearTerminal();
+    } 
+    else if (command === "help") {
+      writeTerminalTextLine("Operating Systems Lab Simulator Help:");
+      writeTerminalTextLine("  gedit <filename>  - Opens the file in the editor");
+      writeTerminalTextLine("  gcc <file> -o a   - Compiles the file (reads saved version)");
+      writeTerminalTextLine("  ./a               - Runs the compiled binary");
+      writeTerminalTextLine("  clear             - Clears the terminal screen");
+    } 
+    else if (command === "gedit") {
+      const filenameArg = args[0] || "";
+      if (!filenameArg) {
+        writeTerminalTextLine("gedit: missing file operand");
+        return;
+      }
+      
+      // Auto-focus the editor
+      setWorkspaceTab("gedit");
+      writeTerminalTextLine(`Opened editor tab for ${currentFilename}`);
+    } 
+    else if (command === "gcc") {
+      // Expecting: gcc filename.c -o a
+      const fileArg = args[0] || "";
+      const hasOutFlag = args.includes("-o");
+      const outVal = args[args.indexOf("-o") + 1] || "";
+
+      if (!fileArg) {
+        writeTerminalTextLine("gcc: fatal error: no input files");
+        return;
+      }
+
+      if (fileArg !== currentFilename) {
+        writeTerminalTextLine(`gcc: error: ${fileArg}: No such file or directory`);
+        return;
+      }
+
+      if (!hasOutFlag || outVal !== "a") {
+        writeTerminalTextLine("gcc: error: compilation requires output flag '-o a'");
+        return;
+      }
+
+      // Perform compile check on SAVED code
+      writeTerminalTextLine(`compiling ${fileArg}...`);
+      
+      // Warn if user has unsaved edits in Gedit
+      const isDirty = editorCode[activeTopicId] !== savedCode[activeTopicId];
+      if (isDirty) {
+        writeTerminalTextLine("warning: You have unsaved changes in Gedit. Compiling previously saved version!");
+      }
+
+      setTimeout(() => {
+        const result = compiler.compile(activeTopicId, savedCode[activeTopicId]);
+        if (result.success) {
+          result.warnings.forEach(w => {
+            writeTerminalTextLine(`${fileArg}:${w.line}: warning: ${w.msg}`);
+          });
+          // standard gcc displays nothing on clean compile success
+          isCompiled[activeTopicId] = true;
+          compiledTopicId[activeTopicId] = activeTopicId;
+        } else {
+          result.errors.forEach(err => {
+            writeTerminalTextLine(`${fileArg}:${err.line}: ${err.msg}`);
+          });
+          isCompiled[activeTopicId] = false;
+        }
+      }, 500);
+    } 
+    else if (rawCmd === "./a") {
+      if (!isCompiled[activeTopicId] || compiledTopicId[activeTopicId] !== activeTopicId) {
+        writeTerminalTextLine("bash: ./a: No such file or directory (did you compile it?)");
+        return;
+      }
+
+      // Execute interactive simulator
+      writeTerminalTextLine("Executing binary image ./a...");
+      setTimeout(() => {
+        compiler.runSimulation(activeTopicId, terminalInterface, () => {
+          terminalIsInteractive = false;
+          activePromptCallback = null;
+          writeTerminalTextLine("Process exited with code 0.");
+        });
+      }, 400);
+    } 
+    else {
+      writeTerminalTextLine(`bash: ${command}: command not found. Type 'help' to review commands.`);
     }
   }
 
-  // Save Code Simulation
-  function triggerSave() {
-    const origBg = btnSave.style.background;
-    btnSave.style.background = "#fff";
+  // --- Automated Run button handler (for teaching commands) ---
+  
+  function triggerAutoRunSequence() {
+    setWorkspaceTab("terminal");
+    const topic = topicsData.find(t => t.id === activeTopicId);
+    const filename = getTopicFilename(topic);
+
+    writeTerminalTextLine("\n[Auto-Run Helper Triggered]");
+    
+    // Simulate typing gedit -> gcc -> ./a sequentially
     setTimeout(() => {
-      btnSave.style.background = origBg;
-      alert(`Saving code file ${tcFileTitle.innerText} to emulated DOS directory C:\\TC\\BIN\\ successfully.`);
-    }, 150);
+      executeShellCommand(`gedit ${filename}`);
+      
+      setTimeout(() => {
+        setWorkspaceTab("terminal");
+        // Save automatically if they click Run
+        savedCode[activeTopicId] = editorCode[activeTopicId];
+        docCodeCode.innerText = savedCode[activeTopicId];
+        updateGeditFilenameTabState();
+        
+        executeShellCommand(`gcc ${filename} -o a`);
+        
+        setTimeout(() => {
+          executeShellCommand("./a");
+        }, 800);
+      }, 1000);
+    }, 400);
   }
 
-  // --- Bind Event Listeners ---
-  tabBtnSyntax.addEventListener("click", () => switchToTab("syntax"));
-  tabBtnShortcuts.addEventListener("click", () => switchToTab("shortcuts"));
+  // --- Interactive Drag Resizer Handle ---
+  let isDragging = false;
 
-  // IDE menu clicks
-  menuCompile.addEventListener("click", triggerCompile);
-  menuRun.addEventListener("click", triggerRun);
+  function initResize(e) {
+    isDragging = true;
+    document.body.style.cursor = "ns-resize";
+    document.body.style.userSelect = "none";
+  }
 
-  // Status bar clicks
-  btnHelp.addEventListener("click", () => {
-    switchToTab("shortcuts");
-    alert("Help triggered! The keyboard shortcuts tab has been highlighted on the bottom right.");
+  function handleResize(e) {
+    if (!isDragging) return;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const rightPanel = document.querySelector(".right-panel");
+    const rect = rightPanel.getBoundingClientRect();
+    
+    // Calculate new height for upper workspace panel
+    const newWorkspaceHeight = clientY - rect.top;
+    const minHeight = 90;
+    const maxHeight = rect.height - 80;
+    
+    if (newWorkspaceHeight >= minHeight && newWorkspaceHeight <= maxHeight) {
+      document.querySelector(".workspace-panel").style.height = `${newWorkspaceHeight}px`;
+    }
+  }
+
+  function endResize() {
+    if (!isDragging) return;
+    isDragging = false;
+    document.body.style.cursor = "";
+    document.body.style.userSelect = "";
+  }
+
+  // Resizer Event Listeners
+  tcResizeHandle.addEventListener("mousedown", initResize);
+  document.addEventListener("mousemove", handleResize);
+  document.addEventListener("mouseup", endResize);
+
+  // Touch support for mobile resizing
+  tcResizeHandle.addEventListener("touchstart", (e) => {
+    initResize(e);
   });
-  btnSave.addEventListener("click", triggerSave);
-  btnOpen.addEventListener("click", () => {
-    alert("Dialog simulation: Load program. To switch code files, use the modern menu in the left panel!");
+  document.addEventListener("touchmove", (e) => {
+    handleResize(e);
   });
-  btnCompile.addEventListener("click", triggerCompile);
-  btnRun.addEventListener("click", triggerRun);
-  btnScreen.addEventListener("click", toggleUserScreen);
+  document.addEventListener("touchend", endResize);
 
-  // Key combinations within the page
-  window.addEventListener("keydown", (e) => {
-    // ESC closes popups
-    if (e.key === "Escape") {
-      if (messageWindow.style.display === "flex") {
-        messageWindow.style.display = "none";
-        editorTextarea.focus();
-      }
-      if (terminalWindow.style.display === "flex") {
-        closeTerminal();
-      }
-    }
-
-    // Capture hotkeys in textarea focus or general document
-    // F2: Save
-    if (e.key === "F2") {
-      e.preventDefault();
-      triggerSave();
-    }
-
-    // F3: Open
-    if (e.key === "F3") {
-      e.preventDefault();
-      alert("Open file dialog triggered.");
-    }
-
-    // Alt+F9: Compile
-    if (e.altKey && e.key === "F9") {
-      e.preventDefault();
-      triggerCompile();
-    }
-
-    // F9 compile shortcut also
-    if (e.key === "F9" && !e.altKey) {
-      e.preventDefault();
-      triggerCompile();
-    }
-
-    // Ctrl+F9: Run
-    if (e.ctrlKey && e.key === "F9") {
-      e.preventDefault();
-      triggerRun();
-    }
-
-    // Alt+F5: User Screen
-    if (e.altKey && e.key === "F5") {
-      e.preventDefault();
-      toggleUserScreen();
-    }
-
-    // If terminal is finished, pressing any key returns to editor
-    if (terminalWindow.style.display === "flex" && !terminalIsRunning && e.key !== "Escape") {
-      closeTerminal();
-    }
+  // --- Click Listeners for Sidebar & Headers ---
+  
+  copyBtn.addEventListener("click", () => {
+    navigator.clipboard.writeText(savedCode[activeTopicId]).then(() => {
+      const prev = copyBtn.innerText;
+      copyBtn.innerText = "Copied!";
+      setTimeout(() => {
+        copyBtn.innerText = prev;
+      }, 1200);
+    });
   });
 
-  // --- Mobile Navigation Setup ---
-  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const mobileRunBtn = document.getElementById("mobile-run-btn");
-  const mobileTabDocs = document.getElementById("mobile-tab-docs");
-  const mobileTabIde = document.getElementById("mobile-tab-ide");
-  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
-  const sidebar = document.querySelector(".sidebar");
-  const contentArea = document.querySelector(".content-area");
+  workspaceTabTerminal.addEventListener("click", () => setWorkspaceTab("terminal"));
+  workspaceTabGedit.addEventListener("click", () => setWorkspaceTab("gedit"));
 
-  // Set default view on mobile content area container
-  if (contentArea) {
-    contentArea.classList.add("view-docs");
+  tabBtnSyntax.addEventListener("click", () => setHelpTab("syntax"));
+  tabBtnShortcuts.addEventListener("click", () => setHelpTab("shortcuts"));
+
+  // Mobile Top Menu / Backdrop Drawer Actions
+  mobileMenuBtn.addEventListener("click", openSidebarDrawer);
+  sidebarBackdrop.addEventListener("click", closeSidebarDrawer);
+
+  function openSidebarDrawer() {
+    document.querySelector(".sidebar").classList.add("open");
+    sidebarBackdrop.classList.add("active");
   }
 
-  // Toggle Sidebar Drawer
-  if (mobileMenuBtn && sidebar && sidebarBackdrop) {
-    mobileMenuBtn.addEventListener("click", () => {
-      sidebar.classList.toggle("open");
-      sidebarBackdrop.classList.toggle("active");
-    });
-
-    sidebarBackdrop.addEventListener("click", () => {
-      sidebar.classList.remove("open");
-      sidebarBackdrop.classList.remove("active");
-    });
+  function closeSidebarDrawer() {
+    document.querySelector(".sidebar").classList.remove("open");
+    sidebarBackdrop.classList.remove("active");
   }
 
-  // Quick Run Button on Mobile Top Header
-  if (mobileRunBtn) {
-    mobileRunBtn.addEventListener("click", () => {
-      // Force switch to IDE tab view so they can see the terminal open
-      if (mobileTabIde) mobileTabIde.click();
-      triggerRun();
-    });
-  }
+  // Mobile Top Run button
+  mobileRunBtn.addEventListener("click", () => {
+    setMobileTab("ide");
+    triggerAutoRunSequence();
+  });
 
-  // Switch Between Docs & IDE Views (Bottom Tab Bar)
-  if (mobileTabDocs && mobileTabIde && contentArea) {
-    mobileTabDocs.addEventListener("click", () => {
+  // Mobile Bottom Tab View Switching
+  mobileTabDocs.addEventListener("click", () => setMobileTab("docs"));
+  mobileTabIde.addEventListener("click", () => setMobileTab("ide"));
+
+  function setMobileTab(tab) {
+    if (tab === "docs") {
       mobileTabDocs.classList.add("active");
       mobileTabIde.classList.remove("active");
-      contentArea.classList.add("view-docs");
-      contentArea.classList.remove("view-ide");
-    });
-
-    mobileTabIde.addEventListener("click", () => {
-      mobileTabIde.classList.add("active");
+      document.querySelector(".doc-panel").style.display = "block";
+      document.querySelector(".right-panel").style.display = "none";
+    } else {
       mobileTabDocs.classList.remove("active");
-      contentArea.classList.add("view-ide");
-      contentArea.classList.remove("view-docs");
-    });
-  }
-
-  // --- Draggable Resizer Setup ---
-  const resizeHandle = document.getElementById("tc-resize-handle");
-  const tcIde = document.querySelector(".tc-ide");
-  const rightPanel = document.querySelector(".right-panel");
-
-  if (resizeHandle && tcIde && rightPanel) {
-    let isDragging = false;
-
-    const startDrag = (e) => {
-      isDragging = true;
-      resizeHandle.classList.add("dragging");
-      document.body.style.cursor = "ns-resize";
-      document.body.style.userSelect = "none";
-      
-      // Prevent text/iframe selection issues
-      if (e.cancelable) e.preventDefault();
-    };
-
-    const doDrag = (e) => {
-      if (!isDragging) return;
-
-      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-      if (!clientY) return;
-
-      const panelRect = rightPanel.getBoundingClientRect();
-      let newHeight = clientY - panelRect.top;
-
-      // Sizing constraints (header + menus + status = approx 100px)
-      const minHeight = 90;
-      const maxHeight = panelRect.height - 80; // leave at least 80px for tabs
-
-      if (newHeight < minHeight) newHeight = minHeight;
-      if (newHeight > maxHeight) newHeight = maxHeight;
-
-      tcIde.style.height = newHeight + "px";
-    };
-
-    const stopDrag = () => {
-      if (isDragging) {
-        isDragging = false;
-        resizeHandle.classList.remove("dragging");
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
+      mobileTabIde.classList.add("active");
+      document.querySelector(".doc-panel").style.display = "none";
+      document.querySelector(".right-panel").style.display = "flex";
+      // Focus input field when entering terminal tab
+      if (activeWorkspaceTab === "terminal") {
+        terminalInput.focus();
       }
-    };
-
-    // Mouse events
-    resizeHandle.addEventListener("mousedown", startDrag);
-    window.addEventListener("mousemove", doDrag);
-    window.addEventListener("mouseup", stopDrag);
-
-    // Touch events for mobile/tablet resizing
-    resizeHandle.addEventListener("touchstart", startDrag);
-    window.addEventListener("touchmove", doDrag, { passive: false });
-    window.addEventListener("touchend", stopDrag);
+    }
   }
 
-  // --- Initializer Run ---
+  // Focus terminal input if clicking anywhere inside the terminal area
+  viewTerminal.addEventListener("click", () => {
+    terminalInput.focus();
+  });
+
+  // Initialize Populations
   populateSidebar();
   populateSyntaxTab();
   populateShortcutsTab();
   
-  // Select first topic
-  selectTopic(activeTopicId);
+  // Select initial topic FCFS
+  selectTopic("fork-basic");
+  setWorkspaceTab("terminal");
 });
-
-// Helper to escape HTML tags
-function escapeHTML(str) {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-}

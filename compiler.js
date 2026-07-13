@@ -1,52 +1,87 @@
 const compiler = {
-  // Analyze C code for Turbo C / DOSBox compatibility issues
+  // Analyze C code for Linux GCC compatibility and warnings
   compile: function(topicId, code) {
     const errors = [];
     const warnings = [];
 
-    // 1. Check for modern headers not supported in Turbo C (POSIX headers)
-    const unsupportedHeaders = [
-      { header: "unistd.h", name: "POSIX standard library" },
-      { header: "sys/ipc.h", name: "System V IPC" },
-      { header: "sys/shm.h", name: "Shared Memory" },
-      { header: "sys/msg.h", name: "Message Queues" },
-      { header: "dirent.h", name: "POSIX directory streams" },
-      { header: "sys/wait.h", name: "POSIX wait APIs" }
-    ];
-
-    unsupportedHeaders.forEach(item => {
-      const regex = new RegExp(`#include\\s*<${item.header}>`, "i");
-      if (regex.test(code)) {
+    // Heuristic C syntax checks (similar to what GCC would catch)
+    
+    // 1. Missing semicolon check (excluding lines ending in block openings/closures, includes, defines, comments)
+    const lines = code.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line && 
+          !line.startsWith("#") && 
+          !line.startsWith("//") && 
+          !line.startsWith("/*") && 
+          !line.endsWith(";") && 
+          !line.endsWith("{") && 
+          !line.endsWith("}") && 
+          !line.endsWith(",") && 
+          !line.startsWith("for") && 
+          !line.startsWith("if") && 
+          !line.startsWith("while") && 
+          !line.startsWith("void") && 
+          !line.startsWith("int main") &&
+          !line.startsWith("else")) {
         errors.push({
-          line: this.getLineNumber(code, regex),
-          msg: `Fatal error: '${item.header}' is a UNIX header. It does not exist in 16-bit MS-DOS (Turbo C).`
+          line: i + 1,
+          msg: `error: expected ';' before end of line`
         });
       }
-    });
-
-    // 2. Check for VLA (Variable Length Array) - specifically "temp[frames]" or similar
-    // Check if we declare an array size using a variable inside main
-    const vlaRegex = /int\s+\w+\s*\[\s*(frames|pages|np|nf|no_of_process|no_of_blocks|n)\s*\]/i;
-    if (vlaRegex.test(code)) {
-      errors.push({
-        line: this.getLineNumber(code, vlaRegex),
-        msg: "Error: Constant expression required. Turbo C (C89) does not support Variable Length Arrays (VLAs). Use a static size like [50] instead."
-      });
     }
 
-    // 3. Check for C99 loop variable declaration: for (int i = ...
-    const c99LoopRegex = /for\s*\(\s*int\s+\w+\s*=/;
-    if (c99LoopRegex.test(code)) {
-      errors.push({
-        line: this.getLineNumber(code, c99LoopRegex),
-        msg: "Error: Declaration of loop variables inside 'for' statement is a C99 feature. In Turbo C, declare variables at the top of the function."
-      });
+    // 2. Check for missing headers (implicit declarations)
+    // Basic fork/exec checks
+    if (topicId.startsWith("fork") || topicId === "execv-call") {
+      if (!/#include\s*<unistd.h>/i.test(code)) {
+        warnings.push({
+          line: 1,
+          msg: `warning: implicit declaration of function 'fork' [-Wimplicit-function-declaration]`
+        });
+      }
     }
-
-    // 4. Check for variable declarations after statements (C89 restriction)
-    // Basic check: if we see an assignment or function call followed by a variable declaration
-    // We can do a simple heuristic check, or leave it for specific files.
     
+    // Directory search checks
+    if (topicId === "dir-search") {
+      if (!/#include\s*<dirent.h>/i.test(code)) {
+        warnings.push({
+          line: 1,
+          msg: `warning: implicit declaration of function 'opendir' [-Wimplicit-function-declaration]`
+        });
+      }
+    }
+
+    // Stat checks
+    if (topicId === "file-stat") {
+      if (!/#include\s*<sys\/stat.h>/i.test(code)) {
+        warnings.push({
+          line: 1,
+          msg: `warning: implicit declaration of function 'stat' [-Wimplicit-function-declaration]`
+        });
+      }
+    }
+
+    // Shared Memory checks
+    if (topicId === "shm-even-odd" || topicId === "prod-cons") {
+      if (code.includes("shmget") && !/#include\s*<sys\/shm.h>/i.test(code)) {
+        warnings.push({
+          line: 1,
+          msg: `warning: implicit declaration of function 'shmget' [-Wimplicit-function-declaration]`
+        });
+      }
+    }
+
+    // Message Queue checks
+    if (topicId === "msg-queue") {
+      if (code.includes("msgget") && !/#include\s*<sys\/msg.h>/i.test(code)) {
+        warnings.push({
+          line: 1,
+          msg: `warning: implicit declaration of function 'msgget' [-Wimplicit-function-declaration]`
+        });
+      }
+    }
+
     return {
       success: errors.length === 0,
       errors: errors,
@@ -54,35 +89,146 @@ const compiler = {
     };
   },
 
-  getLineNumber: function(code, regex) {
-    const lines = code.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      if (regex.test(lines[i])) {
-        return i + 1;
-      }
-    }
-    return 1;
-  },
-
   // Runs the interactive terminal simulation of an algorithm
   runSimulation: function(topicId, terminal, onFinish) {
-    terminal.clear();
-    terminal.writeLine("Turbo C++ Version 3.0");
-    terminal.writeLine("Copyright (c) 1990, 1992 by Borland International, Inc.");
-    terminal.writeLine("DOSBox emulated environment running code...");
-    terminal.writeLine("");
-
     const sim = this.simulations[topicId];
     if (sim) {
       sim(terminal, onFinish);
     } else {
-      terminal.writeLine("No simulation available for this topic.");
+      terminal.writeLine("No execution logic found.");
       onFinish();
     }
   },
 
-  // Simulations for each of the 13 algorithms
+  // Interactive simulations for all 18 OS Lab programs
   simulations: {
+    "fork-basic": function(t, done) {
+      t.writeLine("PID of parent is 4056");
+      t.writeLine("PID of parent of parent is 2997");
+      t.writeLine("PID of child is 4057");
+      t.writeLine("PID of parent of child is 4056");
+      t.writeLine("");
+      done();
+    },
+
+    "fork-loop": function(t, done) {
+      t.writeLine("Simulating concurrent child/parent output...");
+      let i = 1;
+      const interval = setInterval(() => {
+        if (i <= 10) {
+          if (Math.random() > 0.5) {
+            t.writeLine(`This line is from parent, value = ${i}`);
+          } else {
+            t.writeLine(`This line is from child, value = ${i}`);
+          }
+          i++;
+        } else {
+          clearInterval(interval);
+          t.writeLine("***Parent process is done***");
+          t.writeLine("***Child process is done***");
+          done();
+        }
+      }, 200);
+    },
+
+    "execv-call": function(t, done) {
+      t.writeLine("Before execv-----");
+      setTimeout(() => {
+        t.writeLine("I am first.c called by execv()");
+        t.writeLine("");
+        done();
+      }, 1000);
+    },
+
+    "dir-search": function(t, done) {
+      t.prompt("Enter directory name: ", (dir) => {
+        t.prompt("Enter file name: ", (file) => {
+          t.writeLine("Searching directory path...");
+          setTimeout(() => {
+            const files = ["file.c", "main.c", "record.pdf", "shm.c", "first.c", "second.c"];
+            if (files.includes(file.toLowerCase())) {
+              t.writeLine(`File name ${file} is present in directory ${dir}`);
+            } else {
+              t.writeLine(`File name ${file} is not present in directory ${dir}`);
+            }
+            done();
+          }, 800);
+        });
+      });
+    },
+
+    "file-stat": function(t, done) {
+      t.prompt("Enter file name: ", (file) => {
+        t.writeLine(`stat("${file}", &s) resolving metadata...`);
+        setTimeout(() => {
+          t.writeLine(`The file name is ${file}`);
+          t.writeLine("dir = 0");
+          t.writeLine("File size is 472 in bytes");
+          t.writeLine("Last modified time is 1455217494 in seconds");
+          t.writeLine("Last access time is 1455217499 in seconds");
+          t.writeLine("The mode of the file is 100664");
+          done();
+        }, 800);
+      });
+    },
+
+    "shm-even-odd": function(t, done) {
+      t.writeLine("--- SHARED MEMORY: EVEN / ODD PROCESSOR ---");
+      t.prompt("Enter the limit: ", (limitStr) => {
+        const limit = parseInt(limitStr) || 3;
+        const numbers = [];
+        
+        const getNum = (idx) => {
+          if (idx < limit) {
+            t.prompt(`Enter number [${idx + 1}]: `, (num) => {
+              numbers.push(parseInt(num) || 0);
+              getNum(idx + 1);
+            });
+          } else {
+            t.writeLine("\n[Writer] Writing values to segment Key 5678...");
+            t.writeLine("[Reader] Attaching to segment Key 5678...");
+            setTimeout(() => {
+              t.writeLine("\nEven numbers are:");
+              numbers.filter(n => n % 2 === 0).forEach(n => t.writeLine(n));
+              t.writeLine("\nOdd numbers are:");
+              numbers.filter(n => n % 2 !== 0).forEach(n => t.writeLine(n));
+              t.writeLine("\nIts done from client.");
+              done();
+            }, 1000);
+          }
+        };
+        getNum(0);
+      });
+    },
+
+    "msg-queue": function(t, done) {
+      t.writeLine("--- MESSAGE QUEUE CHAT (Client <-> Server) ---");
+      t.writeLine("Enter messages. Type 'exit' to terminate.");
+      
+      const chatLoop = () => {
+        t.prompt("Client: ", (msg) => {
+          if (msg.toLowerCase() === "exit") {
+            t.writeLine("Closing message queue.");
+            done();
+            return;
+          }
+          t.writeLine("Sending message to MQID 16384...");
+          setTimeout(() => {
+            t.writeLine(`[Server] Received msg: ${msg} from Client`);
+            let reply = "Acknowledged.";
+            if (msg.toLowerCase() === "hello" || msg.toLowerCase() === "hai") {
+              reply = "Hello Client! How are you?";
+            }
+            t.writeLine(`Server: Enter msg: ${reply}`);
+            t.writeLine(`[Client] Received msg: ${reply} from Server`);
+            t.writeLine("");
+            chatLoop();
+          }, 800);
+        });
+      };
+      chatLoop();
+    },
+
     "fcfs-sched": function(t, done) {
       t.writeLine("--- FCFS CPU SCHEDULING SIMULATION ---");
       t.prompt("Enter number of processes: ", (npStr) => {
@@ -114,7 +260,7 @@ const compiler = {
               t.writeLine(`\nAverage Waiting Time: ${(totalWT / np).toFixed(2)}`);
               t.writeLine(`Average Turnaround Time: ${(totalTAT / np).toFixed(2)}`);
               done();
-            }, 1000);
+            }, 800);
           }
         };
         getBurst(0);
@@ -136,9 +282,7 @@ const compiler = {
           } else {
             t.writeLine("\nSorting processes by burst time (SJF)...");
             setTimeout(() => {
-              // Sort by burst time
               processes.sort((a, b) => a.bt - b.bt);
-              
               t.writeLine("\nProcess\tBurst Time\tWaiting Time\tTurnaround Time");
               let wt = 0;
               let totalWT = 0;
@@ -155,7 +299,7 @@ const compiler = {
               t.writeLine(`\nAverage Waiting Time: ${(totalWT / np).toFixed(2)}`);
               t.writeLine(`Average Turnaround Time: ${(totalTAT / np).toFixed(2)}`);
               done();
-            }, 1000);
+            }, 800);
           }
         };
         getBurst(0);
@@ -182,7 +326,6 @@ const compiler = {
               setTimeout(() => {
                 let time = 0;
                 let doneCount = 0;
-                const queue = [...processes];
                 
                 t.writeLine("\nGantt Chart Execution Timeline:");
                 t.writeLine("--------------------------------");
@@ -222,7 +365,7 @@ const compiler = {
                 t.writeLine(`\nAverage Waiting Time: ${(totalWT / np).toFixed(2)}`);
                 t.writeLine(`Average Turnaround Time: ${(totalTAT / np).toFixed(2)}`);
                 done();
-              }, 1000);
+              }, 800);
             });
           }
         };
@@ -245,11 +388,9 @@ const compiler = {
               });
             });
           } else {
-            t.writeLine("\nSorting processes by priority value...");
+            t.writeLine("\nSorting processes by priority...");
             setTimeout(() => {
-              // Sort by priority value (ascending order, so lower number is higher priority)
               processes.sort((a, b) => a.priority - b.priority);
-              
               t.writeLine("\nProcess\tPriority\tBurst Time\tWaiting Time\tTurnaround Time");
               let wt = 0;
               let totalWT = 0;
@@ -266,7 +407,7 @@ const compiler = {
               t.writeLine(`\nAverage Waiting Time: ${(totalWT / np).toFixed(2)}`);
               t.writeLine(`Average Turnaround Time: ${(totalTAT / np).toFixed(2)}`);
               done();
-            }, 1000);
+            }, 800);
           }
         };
         getBurst(0);
@@ -274,101 +415,95 @@ const compiler = {
     },
 
     "first-fit": function(t, done) {
+      t.writeLine("--- FIRST FIT MEMORY ALLOCATION ---");
       t.prompt("Enter number of blocks: ", (nbStr) => {
         const nb = parseInt(nbStr) || 3;
         const blocks = [];
         
-        const getBlocks = (idx) => {
+        const getBlock = (idx) => {
           if (idx < nb) {
             t.prompt(`Enter size of Block ${idx + 1}: `, (size) => {
               blocks.push(parseInt(size) || 0);
-              getBlocks(idx + 1);
+              getBlock(idx + 1);
             });
           } else {
             t.prompt("Enter number of processes: ", (npStr) => {
-              const np = parseInt(npStr) || 3;
+              const np = parseInt(npStr) || 2;
               const processes = [];
               
-              const getProcesses = (pIdx) => {
-                if (pIdx < np) {
-                  t.prompt(`Enter size of Process ${pIdx + 1}: `, (size) => {
-                    processes.push(parseInt(size) || 0);
-                    getProcesses(pIdx + 1);
+              const getProcess = (pidx) => {
+                if (pidx < np) {
+                  t.prompt(`Enter size of Process ${pidx + 1}: `, (psize) => {
+                    processes.push(parseInt(psize) || 0);
+                    getProcess(pidx + 1);
                   });
                 } else {
-                  t.writeLine("\nRunning First Fit Memory Allocation...");
+                  t.writeLine("\nRunning allocation loop...");
                   setTimeout(() => {
-                    t.writeLine("\nAfter Allocation:");
                     t.writeLine("Process No\tProcess Size\tBlock Size");
-                    
-                    // Run first fit logic
                     for (let i = 0; i < np; i++) {
-                      let allocatedBlockSize = -1;
+                      let allocated = -1;
                       for (let j = 0; j < nb; j++) {
                         if (blocks[j] >= processes[i]) {
-                          allocatedBlockSize = blocks[j];
-                          blocks[j] -= processes[i]; // shrink block
+                          allocated = blocks[j];
+                          blocks[j] -= processes[i];
                           break;
                         }
                       }
-                      if (allocatedBlockSize !== -1) {
-                        t.writeLine(`${i + 1}\t\t${processes[i]}\t\t${allocatedBlockSize}`);
+                      if (allocated !== -1) {
+                        t.writeLine(`${i + 1}\t\t${processes[i]}\t\t${allocated}`);
                       } else {
                         t.writeLine(`${i + 1}\t\t${processes[i]}\t\tCan't be allocated`);
                       }
                     }
                     done();
-                  }, 1000);
+                  }, 800);
                 }
               };
-              getProcesses(0);
+              getProcess(0);
             });
           }
         };
-        getBlocks(0);
+        getBlock(0);
       });
     },
 
     "best-fit": function(t, done) {
+      t.writeLine("--- BEST FIT MEMORY ALLOCATION ---");
       t.prompt("Enter number of blocks: ", (nbStr) => {
         const nb = parseInt(nbStr) || 3;
         const blocks = [];
         
-        const getBlocks = (idx) => {
+        const getBlock = (idx) => {
           if (idx < nb) {
             t.prompt(`Enter size of Block ${idx + 1}: `, (size) => {
               blocks.push(parseInt(size) || 0);
-              getBlocks(idx + 1);
+              getBlock(idx + 1);
             });
           } else {
             t.prompt("Enter number of processes: ", (npStr) => {
-              const np = parseInt(npStr) || 3;
+              const np = parseInt(npStr) || 2;
               const processes = [];
               
-              const getProcesses = (pIdx) => {
-                if (pIdx < np) {
-                  t.prompt(`Enter size of Process ${pIdx + 1}: `, (size) => {
-                    processes.push(parseInt(size) || 0);
-                    getProcesses(pIdx + 1);
+              const getProcess = (pidx) => {
+                if (pidx < np) {
+                  t.prompt(`Enter size of Process ${pidx + 1}: `, (psize) => {
+                    processes.push(parseInt(psize) || 0);
+                    getProcess(pidx + 1);
                   });
                 } else {
-                  t.writeLine("\nRunning Best Fit Memory Allocation...");
+                  t.writeLine("\nRunning best-fit allocation search...");
                   setTimeout(() => {
-                    t.writeLine("\nAfter Allocation:");
                     t.writeLine("Process No\tProcess Size\tBlock Size");
-                    
                     for (let i = 0; i < np; i++) {
                       let bestIdx = -1;
                       for (let j = 0; j < nb; j++) {
                         if (blocks[j] >= processes[i]) {
-                          if (bestIdx === -1) {
-                            bestIdx = j;
-                          } else if (blocks[bestIdx] > blocks[j]) {
+                          if (bestIdx === -1 || blocks[bestIdx] > blocks[j]) {
                             bestIdx = j;
                           }
                         }
                       }
-                      
                       if (bestIdx !== -1) {
                         t.writeLine(`${i + 1}\t\t${processes[i]}\t\t${blocks[bestIdx]}`);
                         blocks[bestIdx] -= processes[i];
@@ -377,57 +512,53 @@ const compiler = {
                       }
                     }
                     done();
-                  }, 1000);
+                  }, 800);
                 }
               };
-              getProcesses(0);
+              getProcess(0);
             });
           }
         };
-        getBlocks(0);
+        getBlock(0);
       });
     },
 
     "worst-fit": function(t, done) {
+      t.writeLine("--- WORST FIT MEMORY ALLOCATION ---");
       t.prompt("Enter number of blocks: ", (nbStr) => {
         const nb = parseInt(nbStr) || 3;
         const blocks = [];
         
-        const getBlocks = (idx) => {
+        const getBlock = (idx) => {
           if (idx < nb) {
             t.prompt(`Enter size of Block ${idx + 1}: `, (size) => {
               blocks.push(parseInt(size) || 0);
-              getBlocks(idx + 1);
+              getBlock(idx + 1);
             });
           } else {
             t.prompt("Enter number of processes: ", (npStr) => {
-              const np = parseInt(npStr) || 3;
+              const np = parseInt(npStr) || 2;
               const processes = [];
               
-              const getProcesses = (pIdx) => {
-                if (pIdx < np) {
-                  t.prompt(`Enter size of Process ${pIdx + 1}: `, (size) => {
-                    processes.push(parseInt(size) || 0);
-                    getProcesses(pIdx + 1);
+              const getProcess = (pidx) => {
+                if (pidx < np) {
+                  t.prompt(`Enter size of Process ${pidx + 1}: `, (psize) => {
+                    processes.push(parseInt(psize) || 0);
+                    getProcess(pidx + 1);
                   });
                 } else {
-                  t.writeLine("\nRunning Worst Fit Memory Allocation...");
+                  t.writeLine("\nRunning worst-fit allocation search...");
                   setTimeout(() => {
-                    t.writeLine("\nAfter Allocation:");
                     t.writeLine("Process No\tProcess Size\tBlock Size");
-                    
                     for (let i = 0; i < np; i++) {
                       let worstIdx = -1;
                       for (let j = 0; j < nb; j++) {
                         if (blocks[j] >= processes[i]) {
-                          if (worstIdx === -1) {
-                            worstIdx = j;
-                          } else if (blocks[worstIdx] < blocks[j]) {
+                          if (worstIdx === -1 || blocks[worstIdx] < blocks[j]) {
                             worstIdx = j;
                           }
                         }
                       }
-                      
                       if (worstIdx !== -1) {
                         t.writeLine(`${i + 1}\t\t${processes[i]}\t\t${blocks[worstIdx]}`);
                         blocks[worstIdx] -= processes[i];
@@ -436,59 +567,48 @@ const compiler = {
                       }
                     }
                     done();
-                  }, 1000);
+                  }, 800);
                 }
               };
-              getProcesses(0);
+              getProcess(0);
             });
           }
         };
-        getBlocks(0);
+        getBlock(0);
       });
     },
 
     "prod-cons": function(t, done) {
-      t.writeLine("Circular Buffer Size n = 5 slots.");
-      const buffer = new Array(5).fill(-1);
-      let inIdx = 0;
-      let outIdx = 0;
-      
+      t.writeLine("--- PRODUCER-CONSUMER PROBLEM (Shared Memory) ---");
+      let inPtr = 0;
+      let outPtr = 0;
+      let n = 10;
+      let count = 0;
+
       const menu = () => {
-        t.writeLine(`Buffer slots: [ ${buffer.map(x => x === -1 ? "_" : x).join(" | ")} ]`);
-        t.writeLine(`Indices: IN = ${inIdx}, OUT = ${outIdx}`);
-        t.writeLine("1. Produce Item   2. Consume Item   3. Exit");
-        t.prompt("Choose option: ", (opt) => {
-          if (opt === "1") {
-            // Buffer full check
-            if ((outIdx + 1) % 5 === inIdx) {
-              t.writeLine("Buffer is Full! Baker is sleeping.");
-              t.writeLine("");
+        t.writeLine("\n1. Produce Item   2. Consume Item   3. Exit");
+        t.prompt("Choose option: ", (choice) => {
+          if (choice === "1") {
+            if ((outPtr + 1) % n === inPtr) {
+              t.writeLine("Buffer is Full! sleep(3) called.");
               menu();
             } else {
               t.prompt("Enter integer item to produce: ", (item) => {
-                outIdx = (outIdx + 1) % 5;
-                buffer[outIdx] = parseInt(item) || 1;
-                t.writeLine(`Produced item: ${buffer[outIdx]} at slot ${outIdx}`);
-                t.writeLine("");
+                outPtr = (outPtr + 1) % n;
+                t.writeLine(`OUT = ${outPtr} IN = ${inPtr}`);
                 menu();
               });
             }
-          } else if (opt === "2") {
-            // Buffer empty check
-            if (outIdx === inIdx) {
-              t.writeLine("Buffer is Empty! Customer is sleeping.");
-              t.writeLine("");
+          } else if (choice === "2") {
+            if (outPtr === inPtr) {
+              t.writeLine("Buffer is Empty! sleep(3) called.");
               menu();
             } else {
-              inIdx = (inIdx + 1) % 5;
-              const val = buffer[inIdx];
-              buffer[inIdx] = -1; // clear slot
-              t.writeLine(`Consumed item: ${val} from slot ${inIdx}`);
-              t.writeLine("");
+              inPtr = (inPtr + 1) % n;
+              t.writeLine(`Received item. OUT = ${outPtr} IN = ${inPtr}`);
               menu();
             }
           } else {
-            t.writeLine("Exiting Producer-Consumer.");
             done();
           }
         });
@@ -497,156 +617,143 @@ const compiler = {
     },
 
     "fifo-page": function(t, done) {
-      t.prompt("Enter the number of Pages: ", (npStr) => {
-        const np = parseInt(npStr) || 5;
+      t.writeLine("--- FIFO PAGE REPLACEMENT ALGORITHM ---");
+      t.prompt("Enter the number of Pages: ", (pagesStr) => {
+        const pages = parseInt(pagesStr) || 5;
         const refStr = [];
         
-        const getRef = (idx) => {
-          if (idx < np) {
-            t.prompt(`Enter page value [${idx + 1}]: `, (val) => {
+        const getPage = (idx) => {
+          if (idx < pages) {
+            t.prompt(`Value No. [${idx + 1}]: `, (val) => {
               refStr.push(parseInt(val) || 0);
-              getRef(idx + 1);
+              getPage(idx + 1);
             });
           } else {
-            t.prompt("What are the total number of frames: ", (nfStr) => {
-              const nf = parseInt(nfStr) || 3;
-              t.writeLine("\nSimulating FIFO Page Replacement...");
+            t.prompt("What are the total number of frames: ", (framesStr) => {
+              const frames = parseInt(framesStr) || 3;
+              t.writeLine("\nSimulating FIFO replacement...");
               setTimeout(() => {
-                const temp = new Array(nf).fill(-1);
-                let pagefaults = 0;
+                const temp = Array(frames).fill(-1);
+                let faults = 0;
+                let s = 0;
                 
-                for (let m = 0; m < np; m++) {
-                  let hit = false;
-                  for (let n = 0; n < nf; n++) {
+                for (let m = 0; m < pages; m++) {
+                  s = 0;
+                  for (let n = 0; n < frames; n++) {
                     if (refStr[m] === temp[n]) {
-                      hit = true;
+                      s++;
+                      faults--;
                     }
                   }
-                  
-                  if (!hit) {
-                    temp[pagefaults % nf] = refStr[m];
-                    pagefaults++;
+                  faults++;
+                  if ((faults <= frames) && (s === 0)) {
+                    temp[m] = refStr[m];
+                  } else if (s === 0) {
+                    temp[(faults - 1) % frames] = refStr[m];
                   }
                   
-                  t.writeLine(`Ref Page [${refStr[m]}] -> \t[ ${temp.map(x => x === -1 ? "-" : x).join("\t")} ]${!hit ? " (Fault)" : ""}`);
+                  // Print frame status
+                  t.writeLine(temp.map(val => val === -1 ? "-1" : val).join("\t"));
                 }
-                
-                t.writeLine(`\nTotal page faults: ${pagefaults}`);
+                t.writeLine(`\nTotal page faults: ${faults}`);
                 done();
-              }, 1000);
+              }, 800);
             });
           }
         };
-        getRef(0);
+        getPage(0);
       });
     },
 
     "lru-page": function(t, done) {
-      t.prompt("Enter the number of pages: ", (npStr) => {
-        const np = parseInt(npStr) || 5;
-        const refStr = [];
-        
-        const getRef = (idx) => {
-          if (idx < np) {
-            t.prompt(`Enter page value [${idx + 1}]: `, (val) => {
-              refStr.push(parseInt(val) || 0);
-              getRef(idx + 1);
-            });
-          } else {
-            t.prompt("Enter the number of frames: ", (nfStr) => {
-              const nf = parseInt(nfStr) || 3;
-              t.writeLine("\nSimulating LRU Page Replacement...");
+      t.writeLine("--- LRU PAGE REPLACEMENT ALGORITHM ---");
+      t.prompt("Enter the number of frames: ", (nfStr) => {
+        const nf = parseInt(nfStr) || 3;
+        t.prompt("Enter the number of pages: ", (npStr) => {
+          const np = parseInt(npStr) || 5;
+          const pages = [];
+          
+          const getPage = (idx) => {
+            if (idx < np) {
+              t.prompt(`Enter page value [${idx + 1}]: `, (val) => {
+                pages.push(parseInt(val) || 0);
+                getPage(idx + 1);
+              });
+            } else {
+              t.writeLine("\nSimulating LRU replacement...");
               setTimeout(() => {
-                const frames = new Array(nf).fill(-1);
-                const time = new Array(nf).fill(0);
-                let counter = 0;
+                const frames = Array(nf).fill(-1);
+                const time = Array(nf).fill(0);
                 let faults = 0;
+                let counter = 0;
                 
                 for (let i = 0; i < np; i++) {
-                  counter++;
-                  let hitIdx = -1;
+                  let flag1 = 0, flag2 = 0;
                   for (let j = 0; j < nf; j++) {
-                    if (frames[j] === refStr[i]) {
-                      hitIdx = j;
+                    if (frames[j] === pages[i]) {
+                      counter++;
+                      time[j] = counter;
+                      flag1 = flag2 = 1;
                       break;
                     }
                   }
                   
-                  if (hitIdx !== -1) {
-                    time[hitIdx] = counter;
-                  } else {
-                    // Check for empty slots first
-                    let emptyIdx = -1;
+                  if (flag1 === 0) {
                     for (let j = 0; j < nf; j++) {
                       if (frames[j] === -1) {
-                        emptyIdx = j;
+                        counter++;
+                        faults++;
+                        frames[j] = pages[i];
+                        time[j] = counter;
+                        flag2 = 1;
                         break;
                       }
                     }
-                    
-                    if (emptyIdx !== -1) {
-                      frames[emptyIdx] = refStr[i];
-                      time[emptyIdx] = counter;
-                      faults++;
-                    } else {
-                      // LRU replace
-                      let lruIdx = 0;
-                      let minTime = time[0];
-                      for (let j = 1; j < nf; j++) {
-                        if (time[j] < minTime) {
-                          minTime = time[j];
-                          lruIdx = j;
-                        }
-                      }
-                      frames[lruIdx] = refStr[i];
-                      time[lruIdx] = counter;
-                      faults++;
-                    }
                   }
                   
-                  t.writeLine(`Ref Page [${refStr[i]}] -> \t[ ${frames.map(x => x === -1 ? "-" : x).join("\t")} ]${hitIdx === -1 ? " (Fault)" : ""}`);
+                  if (flag2 === 0) {
+                    // Find LRU position
+                    let minTime = time[0], pos = 0;
+                    for (let j = 1; j < nf; j++) {
+                      if (time[j] < minTime) {
+                        minTime = time[j];
+                        pos = j;
+                      }
+                    }
+                    counter++;
+                    faults++;
+                    frames[pos] = pages[i];
+                    time[pos] = counter;
+                  }
+                  
+                  t.writeLine(frames.join("\t"));
                 }
-                
                 t.writeLine(`\nTotal page faults = ${faults}`);
                 done();
-              }, 1000);
-            });
-          }
-        };
-        getRef(0);
+              }, 800);
+            }
+          };
+          getPage(0);
+        });
       });
     },
 
     "bankers": function(t, done) {
+      t.writeLine("--- BANKER'S SAFETY ALGORITHM ---");
       t.prompt("Enter number of processes: ", (npStr) => {
-        const np = parseInt(npStr) || 5;
+        const np = parseInt(npStr) || 3;
         t.prompt("Enter number of resources: ", (nrStr) => {
           const nr = parseInt(nrStr) || 3;
-          t.writeLine(`Using default Bankers matrix allocation for ${np} processes and ${nr} resources.`);
-          t.writeLine("Allocation Matrix:");
-          t.writeLine("P0: 0 1 0   P1: 2 0 0   P2: 3 0 2   P3: 2 1 1   P4: 0 0 2");
-          t.writeLine("Max Matrix:");
-          t.writeLine("P0: 7 5 3   P1: 3 2 2   P2: 9 0 2   P3: 2 2 2   P4: 4 3 3");
-          t.writeLine("Available Resources:");
-          t.writeLine("3 3 2");
-          t.writeLine("");
-          
-          t.writeLine("Calculating Need Matrix (Max - Allocation)...");
+          t.writeLine("\nConfiguring safety simulator...");
           setTimeout(() => {
-            t.writeLine("Need Matrix is:");
-            t.writeLine("P0: 7 4 3");
-            t.writeLine("P1: 1 2 2");
-            t.writeLine("P2: 6 0 0");
-            t.writeLine("P3: 0 1 1");
-            t.writeLine("P4: 4 3 1");
-            t.writeLine("");
-            t.writeLine("Running banker safety validation algorithm...");
-            
-            setTimeout(() => {
-              t.writeLine("Safe Sequence is: P1 -> P3 -> P4 -> P0 -> P2");
-              t.writeLine("System is in SAFE STATE!");
-              done();
-            }, 1200);
+            // Mock safety calculations
+            t.writeLine("\nNeed Matrix is:");
+            t.writeLine("7 4 3");
+            t.writeLine("1 2 2");
+            t.writeLine("6 0 0");
+            t.writeLine("\nSafe Sequence is: P1 -> P3 -> P2");
+            t.writeLine("System is in SAFE STATE!");
+            done();
           }, 1000);
         });
       });

@@ -1,9 +1,425 @@
 // ============================================================
-// data.js — Pure Turbo C OS Lab Algorithms Dataset
-// Topics, Syntaxes, Shortcuts
+// data.js — Complete 18 OS Lab Algorithms Dataset for Linux
+// Topics, Syntaxes, "How to Run" Help
 // ============================================================
 
 const topicsData = [
+  {
+    id: "fork-basic",
+    category: "System Calls",
+    title: "Basic fork()",
+    description: "Using the fork() system call to create a single child process. The child is an exact copy of the parent process, getting its own memory space.",
+    mismatch_alert: null,
+    deconstruction: `
+      <div class="doc-section">
+        <h4>Step-by-Step Code Deconstruction</h4>
+        <p><strong>1. Header Inclusions:</strong> We include <code>&lt;sys/types.h&gt;</code> and <code>&lt;unistd.h&gt;</code> which declare POSIX system calls such as <code>fork()</code> and process identifiers.</p>
+        <p><strong>2. Process Creation:</strong> Inside <code>main()</code>, calling <code>fork()</code> instructs the OS kernel to duplicate the current process. The call returns a process ID of type <code>pid_t</code>.</p>
+        <p><strong>3. Child Branch Logic:</strong> The variable <code>id</code> is checked. If <code>id == 0</code>, the current code execution is inside the newly spawned child process. The child prints its own PID using <code>getpid()</code> and its parent's PID using <code>getppid()</code>.</p>
+        <p><strong>4. Parent Branch Logic:</strong> If <code>id &gt; 0</code>, the execution is inside the parent process. The value of <code>id</code> contains the child's PID. The parent prints its own PID and its parent process's PID.</p>
+      </div>
+    `,
+    explanation: `
+      <div class="doc-section">
+        <h4>Core Logic Flow</h4>
+        <p>When <code>fork()</code> executes, the process splits into two concurrent branches. Both processes start running from the line immediately following the fork call. Because the PID value returned differs (0 in the child, child's PID in the parent), we use conditional branching to guide their execution path.</p>
+      </div>
+    `,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC. Requires a Linux/POSIX environment to compile.</div>`,
+    code: `#include <stdio.h>
+#include <unistd.h>
+#include <sys/wait.h>
+#include <sys/types.h>
+
+int main()
+{
+    pid_t id;
+    id = fork();
+
+    if (id == 0)
+    {
+        printf("PID of child is %d\\n", getpid());
+        printf("PID of parent of child is %d\\n", getppid());
+    }
+    if (id > 0)
+    {
+        printf("PID of parent is %d\\n", getpid());
+        printf("PID of parent of parent is %d\\n", getppid());
+    }
+    return 0;
+}`
+  },
+
+  {
+    id: "fork-loop",
+    category: "System Calls",
+    title: "fork() with Loop",
+    description: "Demonstrates interleaved parent and child execution using a loop, simulating time-sliced CPU scheduling behavior.",
+    mismatch_alert: null,
+    deconstruction: `
+      <div class="doc-section">
+        <h4>Step-by-Step Code Deconstruction</h4>
+        <p><strong>1. Parallel Functions:</strong> We declare two helper functions <code>ChildProcess()</code> and <code>ParentProcess()</code> to isolate the execution paths of the two processes.</p>
+        <p><strong>2. Fork Execution:</strong> After calling <code>fork()</code>, we check the return value. If it is 0, we call <code>ChildProcess()</code>, otherwise the parent calls <code>ParentProcess()</code>.</p>
+        <p><strong>3. Loop Interleaving:</strong> Both helper functions run a loop 50 times. Because they run concurrently, their standard output lines interleave as the OS scheduler switches CPU execution slices between them.</p>
+      </div>
+    `,
+    explanation: `
+      <div class="doc-section">
+        <h4>Core Logic Flow</h4>
+        <p>This program demonstrates process concurrency. Since the child and parent run in parallel, their output lines interlace dynamically, illustrating how the OS schedules processes on the CPU in a time-shared environment.</p>
+      </div>
+    `,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> GCC Linux compliant.</div>`,
+    code: `#include <stdio.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#define MAX_COUNT 50
+
+void ChildProcess();
+void ParentProcess();
+
+int main(void)
+{
+    pid_t pid;
+    pid = fork();
+    if (pid == 0)
+        ChildProcess();
+    else
+        ParentProcess();
+    return 0;
+}
+
+void ChildProcess()
+{
+    int i;
+    for (i = 1; i <= MAX_COUNT; i++)
+    {
+        printf("This line is from child, value = %d\\n", i);
+    }
+    printf("***Child process is done***\\n");
+}
+
+void ParentProcess()
+{
+    int i;
+    for (i = 1; i <= MAX_COUNT; i++)
+    {
+        printf("This line is from parent, value = %d\\n", i);
+    }
+    printf("***Parent process is done***\\n");
+}`
+  },
+
+  {
+    id: "execv-call",
+    category: "System Calls",
+    title: "execv() Call",
+    description: "Demonstrates how execv() replaces the current process image with a new one. The first.c program is called by the second.c program.",
+    mismatch_alert: null,
+    deconstruction: `
+      <div class="doc-section">
+        <h4>Step-by-Step Code Deconstruction</h4>
+        <p><strong>1. Setting Arguments:</strong> In <code>second.c</code>, we declare a string array <code>args[]</code>. The first element is the path to the executable, and the array must end with a <code>NULL</code> pointer.</p>
+        <p><strong>2. Executing the Binary:</strong> The function <code>execv(args[0], args)</code> is called. This tells the OS to replace the current running code space with the compiled binary <code>first</code>.</p>
+        <p><strong>3. Discarded Statements:</strong> Any lines of code written after the <code>execv()</code> statement are ignored on success, because the original process code is completely overwritten in memory.</p>
+      </div>
+    `,
+    explanation: `
+      <div class="doc-section">
+        <h4>Core Logic Flow</h4>
+        <p><code>execv</code> is used to execute a separate program inside an existing process. When it executes, the OS loads the new binary file into memory, overlaying the previous instructions, variables, and registers.</p>
+      </div>
+    `,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Compile first.c as 'first' before running second.c.</div>`,
+    code: `// --- first.c ---
+#include <stdio.h>
+int main()
+{
+    printf("I am first.c called by execv()");
+    printf("\\n");
+    return 0;
+}
+
+// --- second.c ---
+#include <stdio.h>
+#include <unistd.h>
+
+int main()
+{
+    /* A null terminated array of character pointers */
+    char *args[] = {"./first", NULL};
+    printf("Before execv-----\\n");
+    execv(args[0], args);
+    
+    /* This statement is ignored after execv() */
+    printf("Ending-----\\n");
+    return 0;
+}`
+  },
+
+  {
+    id: "dir-search",
+    category: "System Calls",
+    title: "Directory Search",
+    description: "Search for a file by name within a given directory using POSIX directory streams (opendir, readdir, closedir).",
+    mismatch_alert: null,
+    deconstruction: `
+      <div class="doc-section">
+        <h4>Step-by-Step Code Deconstruction</h4>
+        <p><strong>1. Directory Streams:</strong> We declare a directory pointer <code>DIR *dirptr</code> and a structure pointer <code>struct dirent *entry</code> to hold individual file entries.</p>
+        <p><strong>2. Opening Streams:</strong> We open the path using <code>opendir(dir)</code>. If it returns <code>NULL</code>, the directory does not exist.</p>
+        <p><strong>3. Directory Iteration:</strong> A loop reads entries sequentially: <code>entry = readdir(dirptr)</code>. The name of the file is compared against the target using <code>strcmp()</code>. If a match is found, the search terminates.</p>
+      </div>
+    `,
+    explanation: `
+      <div class="doc-section">
+        <h4>Core Logic Flow</h4>
+        <p>The program queries the OS directory stream. By looping through the returned structures, it reads every filename node in the directory sector and checks for matches.</p>
+      </div>
+    `,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Requires &lt;dirent.h&gt; header.</div>`,
+    code: `#include <string.h>
+#include <sys/types.h>
+#include <dirent.h>
+#include <stdio.h>
+
+int search(char dir[], char file[])
+{
+    DIR *dirptr;
+    struct dirent *entry;
+    dirptr = opendir(dir);
+    if (dirptr == NULL)
+        return 1;
+    entry = readdir(dirptr);
+    while (entry != NULL)
+    {
+        if (strcmp(entry->d_name, file) == 0)
+            return 0;
+        entry = readdir(dirptr);
+    }
+    return 1;
+}
+
+int main()
+{
+    char s[20], f[20];
+    int r;
+    printf("Enter directory name: ");
+    scanf("%s", s);
+    printf("Enter file name: ");
+    scanf("%s", f);
+    r = search(s, f);
+    if (r == 0)
+        printf("File name %s is present in directory %s\\n", f, s);
+    else
+        printf("File name %s is not present in directory %s\\n", f, s);
+    return 0;
+}`
+  },
+
+  {
+    id: "file-stat",
+    category: "System Calls",
+    title: "File stat()",
+    description: "Retrieve file metadata (size, permissions, timestamps) using the stat() system call.",
+    mismatch_alert: null,
+    deconstruction: `
+      <div class="doc-section">
+        <h4>Step-by-Step Code Deconstruction</h4>
+        <p><strong>1. Struct stat:</strong> We declare <code>struct stat s</code> to hold file property fields.</p>
+        <p><strong>2. Querying metadata:</strong> We pass the filename to <code>stat(f, &amp;s)</code>. The OS queries the file's inode block and populates the struct.</p>
+        <p><strong>3. Extracting attributes:</strong> We print file properties: size (<code>s.st_size</code>), modified time (<code>s.st_mtime</code>), access time (<code>s.st_atime</code>), and mode permission octals (<code>s.st_mode</code>).</p>
+      </div>
+    `,
+    explanation: `
+      <div class="doc-section">
+        <h4>Core Logic Flow</h4>
+        <p>The <code>stat</code> call retrieves filesystem metadata without actually opening the file. This allows fast checking of permissions, directory status, and file size details.</p>
+      </div>
+    `,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> GCC Linux compliant.</div>`,
+    code: `#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdio.h>
+
+int main()
+{
+    char f[20];
+    struct stat s;
+    printf("Enter file name: ");
+    scanf("%s", f);
+    stat(f, &s);
+    printf("The file name is %s\\n", f);
+    printf("dir = %d\\n", S_ISDIR(s.st_mode));
+    printf("File size is %ld in bytes\\n", s.st_size);
+    printf("Last modified time is %ld in seconds\\n", s.st_mtime);
+    printf("Last access time is %ld in seconds\\n", s.st_atime);
+    printf("The mode of the file is %o\\n", s.st_mode);
+    return 0;
+}`
+  },
+
+  {
+    id: "shm-even-odd",
+    category: "IPC",
+    title: "Shared Memory: Even/Odd",
+    description: "Two processes communicate through shared memory. A writer process stores numbers, a reader process reads them and separates even/odd.",
+    mismatch_alert: null,
+    deconstruction: `
+      <div class="doc-section">
+        <h4>Step-by-Step Code Deconstruction</h4>
+        <p><strong>1. IPC segment allocation:</strong> We allocate memory using <code>shmget(key, size, flags)</code>. The key acts as an identifier.</p>
+        <p><strong>2. Attaching segments:</strong> <code>shmat(shmid, NULL, 0)</code> attaches the allocated segment to the process address space. We map this to a pointer variable <code>shm</code>.</p>
+        <p><strong>3. Synchronization Handshake:</strong> The writer process inputs numbers and writes them to the memory array. Once done, it writes a termination character <code>*</code> to indicate completion. The reader process waits for this token before printing even and odd values.</p>
+      </div>
+    `,
+    explanation: `
+      <div class="doc-section">
+        <h4>Core Logic Flow</h4>
+        <p>Shared memory allows multiple processes to read and write to the same physical memory space. This bypasses file I/O operations, providing high-performance inter-process communication.</p>
+      </div>
+    `,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Execute the writer first, then compile and run the reader program.</div>`,
+    code: `// --- writer.c ---
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
+#include <unistd.h>
+#define SHMSIZE 27
+
+int main()
+{
+    int i, a;
+    int shmid, n;
+    key_t key;
+    char *shm, *s;
+    key = 5678;
+    shmid = shmget(key, SHMSIZE, IPC_CREAT | 0666);
+    shm = (char *)shmat(shmid, NULL, 0);
+    s = shm;
+    printf("Enter the limit: ");
+    scanf("%d", &n);
+    *s = n;
+    s++;
+    printf("Enter numbers\\n");
+    for (i = 0; i < n; i++)
+    {
+        scanf("%d", &a);
+        *s = a;
+        s++;
+    }
+    while (*shm != '*')
+        sleep(1);
+    return 0;
+}
+
+// --- reader.c ---
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
+#define SHMSIZE 27
+
+int main()
+{
+    int shmid, n, a[20], i;
+    key_t key;
+    char *shm, *s;
+    key = 5678;
+    shmid = shmget(key, SHMSIZE, 0666);
+    shm = (char *)shmat(shmid, NULL, 0);
+    s = shm;
+    n = *s;
+    s++;
+    for (i = 0; i < n; i++)
+    {
+        a[i] = *s;
+        s++;
+    }
+    printf("\\nEven numbers are:\\n");
+    for (i = 0; i < n; i++)
+    {
+        if (a[i] % 2 == 0)
+            printf("%d\\n", a[i]);
+    }
+    printf("\\nOdd numbers are:\\n");
+    for (i = 0; i < n; i++)
+    {
+        if (a[i] % 2 == 1)
+            printf("%d\\n", a[i]);
+    }
+    *shm = '*';
+    printf("\\nIts done from client.\\n");
+    return 0;
+}`
+  },
+
+  {
+    id: "msg-queue",
+    category: "IPC",
+    title: "Message Queue Chat",
+    description: "A simple client-server chat using POSIX message queues (msgget, msgsnd, msgrcv). Type 'exit' to terminate.",
+    mismatch_alert: null,
+    deconstruction: `
+      <div class="doc-section">
+        <h4>Step-by-Step Code Deconstruction</h4>
+        <p><strong>1. Queue Initialization:</strong> We create a message queue with a key using <code>msgget(key, flags)</code>, returning a queue ID.</p>
+        <p><strong>2. Defining Structures:</strong> We declare a structured message buffer <code>struct mymsg</code> containing a long field (message type) and data buffers.</p>
+        <p><strong>3. Communication loop:</strong> The client sends messages via <code>msgsnd()</code> and waits for the server response using <code>msgrcv()</code>. The server processes the queue concurrently.</p>
+      </div>
+    `,
+    explanation: `
+      <div class="doc-section">
+        <h4>Core Logic Flow</h4>
+        <p>Message queues provide a reliable queue of data packets managed by the OS kernel. Instead of shared memory, the OS synchronizes readers and writers automatically, ensuring sequential delivery.</p>
+      </div>
+    `,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> GCC Linux compliant. Requires sys/msg.h.</div>`,
+    code: `// --- client.c ---
+#include <stdio.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/stat.h>
+#include <sys/msg.h>
+#include <unistd.h>
+
+struct mymsg
+{
+    long type;
+    char msg[30];
+    char from[10];
+};
+
+struct mymsg m, r;
+
+int main()
+{
+    key_t key;
+    int mqid;
+    char buff[30];
+    key = ftok(".", 1);
+    mqid = msgget(key, IPC_CREAT | 0666);
+    while (1)
+    {
+        sleep(1);
+        printf("Enter msg: ");
+        gets(buff);
+        strcpy(m.msg, buff);
+        m.type = 1;
+        strcpy(m.from, "Client");
+        msgsnd(mqid, &m, sizeof(struct mymsg), 0);
+        sleep(1);
+        msgrcv(mqid, &r, sizeof(struct mymsg), 1, 0);
+        printf("Received msg: %s is from %s\\n", r.msg, r.from);
+    }
+    return 0;
+}`
+  },
+
   {
     id: "fcfs-sched",
     category: "CPU Scheduling",
@@ -13,11 +429,9 @@ const topicsData = [
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Variables and Buffers:</strong> We declare arrays <code>bt[20]</code> (Burst Time), <code>wt[20]</code> (Waiting Time), and <code>tat[20]</code> (Turnaround Time) to store process metrics. The integer <code>n</code> holds the total count of processes.</p>
-        <p><strong>2. Initializing the Queue:</strong> The first process in the queue (index 0) has a waiting time of exactly zero: <code>wt[0] = 0</code>, as it executes immediately upon arrival.</p>
-        <p><strong>3. Computing Waiting Times:</strong> We use a loop running from index <code>i = 1</code> to <code>n-1</code>. The waiting time for the current process is the sum of the waiting time and burst time of the preceding process: <code>wt[i] = wt[i-1] + bt[i-1]</code>. This builds the timeline sequentially.</p>
-        <p><strong>4. Calculating Turnaround Times:</strong> For each process <code>i</code>, the turnaround time is computed by adding its own burst time to its waiting time: <code>tat[i] = wt[i] + bt[i]</code>. This represents the total elapsed time from arrival to completion.</p>
-        <p><strong>5. Averages Accumulator:</strong> We sum the elements of <code>wt</code> and <code>tat</code> inside a loop, storing the results in <code>totalWT</code> and <code>totalTAT</code>, then divide by <code>n</code> to find the average values.</p>
+        <p><strong>1. Initialization:</strong> The first process (index 0) has a waiting time of exactly zero: <code>wt[0] = 0</code>.</p>
+        <p><strong>2. Accumulating Wait Times:</strong> A loop runs from index <code>i = 1</code> to <code>n-1</code>. The waiting time for the current process is calculated by adding the waiting time and burst time of the preceding process: <code>wt[i] = wt[i-1] + bt[i-1]</code>.</p>
+        <p><strong>3. Computing Turnaround:</strong> For each process, we calculate turnaround time as <code>tat[i] = wt[i] + bt[i]</code>.</p>
       </div>
     `,
     explanation: `
@@ -26,29 +440,30 @@ const topicsData = [
         <p>FCFS processes CPU tasks using a simple FIFO queue structure. The CPU execution timeline starts at time 0. Each process holds the CPU until its burst time expires, allowing the next process in the queue to begin execution. This algorithm is prone to the 'convoy effect', where short processes wait a long time behind a single CPU-bound process.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C++ 3.0. Variable declarations must be at the top of the function.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
+int main()
+{
     int bt[20], wt[20], tat[20], n, i;
     float wt_avg = 0, tat_avg = 0;
 
     printf("Enter number of processes: ");
     scanf("%d", &n);
 
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         printf("Enter burst time for P%d: ", i + 1);
         scanf("%d", &bt[i]);
     }
 
-    /* First process waits 0 units */
     wt[0] = 0;
     tat[0] = bt[0];
     wt_avg = 0;
     tat_avg = tat[0];
 
-    /* Calculate waiting & turnaround times */
-    for (i = 1; i < n; i++) {
+    for (i = 1; i < n; i++)
+    {
         wt[i] = wt[i - 1] + bt[i - 1];
         tat[i] = wt[i] + bt[i];
         wt_avg += wt[i];
@@ -56,13 +471,13 @@ int main() {
     }
 
     printf("\\nProcess\\tBurst Time\\tWaiting Time\\tTurnaround Time\\n");
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         printf("P%d\\t\\t%d\\t\\t%d\\t\\t%d\\n", i + 1, bt[i], wt[i], tat[i]);
     }
 
     printf("\\nAverage Waiting Time: %.2f\\n", wt_avg / n);
     printf("Average Turnaround Time: %.2f\\n", tat_avg / n);
-
     return 0;
 }`
   },
@@ -76,10 +491,8 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Data Structures:</strong> We maintain arrays for process numbers <code>p[20]</code>, burst times <code>bt[20]</code>, waiting times <code>wt[20]</code>, and turnaround times <code>tat[20]</code>.</p>
-        <p><strong>2. Bubble Sort Logic:</strong> To implement SJF, processes must be sorted by burst time. We use nested loops with indices <code>i</code> and <code>j</code>. If <code>bt[i] > bt[j]</code>, we swap their burst times, and crucially, swap their process numbers in <code>p[i]</code> to keep track of process identities.</p>
-        <p><strong>3. Sequenced Calculations:</strong> Once sorted, the execution order is determined. The waiting time for the first sorted process is set to zero: <code>wt[0] = 0</code>.</p>
-        <p><strong>4. Running Averages:</strong> We compute <code>wt[i] = wt[i-1] + bt[i-1]</code> and <code>tat[i] = wt[i] + bt[i]</code> sequentially. Summing these arrays yields total scheduling overhead, which is divided by <code>n</code>.</p>
+        <p><strong>1. Sorting Jobs:</strong> We use a nested bubble-sort loop to arrange processes by ascending burst times (<code>bt[i] &gt; bt[j]</code>). When swapping burst times, we also swap process IDs in the <code>p[]</code> array to maintain correct labels.</p>
+        <p><strong>2. Math Processing:</strong> After sorting, waiting time and turnaround time are computed sequentially just like FCFS.</p>
       </div>
     `,
     explanation: `
@@ -88,32 +501,34 @@ int main() {
         <p>SJF minimizes average waiting time by prioritizing shorter jobs. By running the shortest tasks first, waiting processes complete quickly, reducing queue congestion. The algorithm requires advance knowledge of CPU burst times, which makes it ideal for batch processing systems.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C++ 3.0.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
+int main()
+{
     int p[20], bt[20], wt[20], tat[20], n, i, j, temp;
     float wt_avg = 0, tat_avg = 0;
 
     printf("Enter number of processes: ");
     scanf("%d", &n);
 
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         p[i] = i + 1;
         printf("Enter burst time for P%d: ", p[i]);
         scanf("%d", &bt[i]);
     }
 
-    /* Sort processes by burst time (Bubble Sort) */
-    for (i = 0; i < n - 1; i++) {
-        for (j = i + 1; j < n; j++) {
-            if (bt[i] > bt[j]) {
-                /* Swap Burst Times */
+    for (i = 0; i < n - 1; i++)
+    {
+        for (j = i + 1; j < n; j++)
+        {
+            if (bt[i] > bt[j])
+            {
                 temp = bt[i];
                 bt[i] = bt[j];
                 bt[j] = temp;
 
-                /* Swap Process IDs */
                 temp = p[i];
                 p[i] = p[j];
                 p[j] = temp;
@@ -125,7 +540,8 @@ int main() {
     tat[0] = bt[0];
     tat_avg = tat[0];
 
-    for (i = 1; i < n; i++) {
+    for (i = 1; i < n; i++)
+    {
         wt[i] = wt[i - 1] + bt[i - 1];
         tat[i] = wt[i] + bt[i];
         wt_avg += wt[i];
@@ -133,13 +549,13 @@ int main() {
     }
 
     printf("\\nProcess\\tBurst Time\\tWaiting Time\\tTurnaround Time\\n");
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         printf("P%d\\t\\t%d\\t\\t%d\\t\\t%d\\n", p[i], bt[i], wt[i], tat[i]);
     }
 
     printf("\\nAverage Waiting Time: %.2f\\n", wt_avg / n);
     printf("Average Turnaround Time: %.2f\\n", tat_avg / n);
-
     return 0;
 }`
   },
@@ -153,14 +569,8 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Tracking Remnants:</strong> We keep a copy of the burst times in <code>rem_bt[20]</code>. As execution cycles progress, we decrease values in <code>rem_bt</code> to track remaining execution needs.</p>
-        <p><strong>2. Timeline Clock Tracker:</strong> An integer variable <code>sq</code> tracks the accumulated elapsed time (timeline clock). Another counter <code>count</code> counts how many processes have finished execution (when their <code>rem_bt[i] == 0</code>).</p>
-        <p><strong>3. Time Slicing Loop:</strong> While <code>count</code> is less than <code>n</code>, the program loops through all processes. If process <code>i</code> has <code>rem_bt[i] > 0</code>, we slice it:
-          <ul>
-            <li>If <code>rem_bt[i] > tq</code> (Time Quantum), it consumes <code>tq</code> time. We update <code>sq += tq</code> and decrement <code>rem_bt[i] -= tq</code>.</li>
-            <li>Else, it finishes. We update <code>sq += rem_bt[i]</code>, set <code>wt[i] = sq - bt[i]</code>, compute turnaround <code>tat[i] = sq</code>, set <code>rem_bt[i] = 0</code>, and increment completed processes: <code>count++</code>.</li>
-          </ul>
-        </p>
+        <p><strong>1. Remaining Time:</strong> We copy original burst times into <code>rem_bt[]</code> to track remaining execution needs.</p>
+        <p><strong>2. Time Quantum Slicing:</strong> In a loop, if <code>rem_bt[i]</code> is larger than the time quantum <code>tq</code>, we execute the process for <code>tq</code> seconds and reduce <code>rem_bt[i]</code> accordingly. If the process is close to completion (<code>rem_bt[i] &lt;= tq</code>), we run it to completion and calculate waiting and turnaround times based on the elapsed time.</p>
       </div>
     `,
     explanation: `
@@ -169,10 +579,11 @@ int main() {
         <p>Round Robin is designed for time-sharing systems. The algorithm slices process execution cycles using a time quantum. Preemption occurs if a job does not complete within its time slice, moving the process back to the end of the ready queue. This ensures fair distribution of CPU resources.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C++ 3.0. Variable declarations must be grouped at the start of main().</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
+int main()
+{
     int bt[20], wt[20], tat[20], rem_bt[20];
     int n, i, tq, count = 0, sq = 0;
     float wt_avg = 0, tat_avg = 0;
@@ -180,24 +591,31 @@ int main() {
     printf("Enter number of processes: ");
     scanf("%d", &n);
 
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         printf("Enter burst time for P%d: ", i + 1);
         scanf("%d", &bt[i]);
-        rem_bt[i] = bt[i]; /* Copy burst times */
+        rem_bt[i] = bt[i];
     }
 
     printf("Enter time quantum: ");
     scanf("%d", &tq);
 
-    while (1) {
+    while (1)
+    {
         int done = 1;
-        for (i = 0; i < n; i++) {
-            if (rem_bt[i] > 0) {
-                done = 0; /* There is a pending process */
-                if (rem_bt[i] > tq) {
+        for (i = 0; i < n; i++)
+        {
+            if (rem_bt[i] > 0)
+            {
+                done = 0;
+                if (rem_bt[i] > tq)
+                {
                     sq += tq;
                     rem_bt[i] -= tq;
-                } else {
+                }
+                else
+                {
                     sq += rem_bt[i];
                     wt[i] = sq - bt[i];
                     tat[i] = sq;
@@ -210,7 +628,8 @@ int main() {
     }
 
     printf("\\nProcess\\tBurst Time\\tWaiting Time\\tTurnaround Time\\n");
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         wt_avg += wt[i];
         tat_avg += tat[i];
         printf("P%d\\t\\t%d\\t\\t%d\\t\\t%d\\n", i + 1, bt[i], wt[i], tat[i]);
@@ -218,7 +637,6 @@ int main() {
 
     printf("\\nAverage Waiting Time: %.2f\\n", wt_avg / n);
     printf("Average Turnaround Time: %.2f\\n", tat_avg / n);
-
     return 0;
 }`
   },
@@ -232,10 +650,8 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Data Fields:</strong> We add an integer array <code>pri[20]</code> to store priority values alongside burst times <code>bt[20]</code> and process indices <code>p[20]</code>.</p>
-        <p><strong>2. Priority Ordering:</strong> We sort the process arrays by priority value. A nested bubble-sort comparison <code>pri[i] > pri[j]</code> triggers swaps. When swapping priorities, we also swap burst times and process IDs in their respective arrays.</p>
-        <p><strong>3. Execution Sequence:</strong> Once sorted, the execution sequence follows index order. The process at index 0 runs immediately (waiting time = 0).</p>
-        <p><strong>4. Final Metrics:</strong> We compute waiting times <code>wt[i] = wt[i-1] + bt[i-1]</code> and turnaround times <code>tat[i] = wt[i] + bt[i]</code>, accumulating totals to determine the averages.</p>
+        <p><strong>1. Priority Sorting:</strong> We use bubble-sort to sort processes by ascending priority values (<code>pri[i] &gt; pri[j]</code>). Lower values represent higher priority.</p>
+        <p><strong>2. Metrics Calculation:</strong> Once sorted, we calculate waiting and turnaround times sequentially.</p>
       </div>
     `,
     explanation: `
@@ -244,17 +660,19 @@ int main() {
         <p>Priority scheduling allocates CPU access based on priority ranks. Higher-priority processes run first. A major drawback of this algorithm is 'starvation', where low-priority processes wait indefinitely. This is resolved in production kernels using 'aging' techniques.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C++ 3.0.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
+int main()
+{
     int p[20], bt[20], pri[20], wt[20], tat[20], n, i, j, temp;
     float wt_avg = 0, tat_avg = 0;
 
     printf("Enter number of processes: ");
     scanf("%d", &n);
 
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         p[i] = i + 1;
         printf("Enter burst time for P%d: ", p[i]);
         scanf("%d", &bt[i]);
@@ -262,21 +680,20 @@ int main() {
         scanf("%d", &pri[i]);
     }
 
-    /* Sort processes by priority (Bubble Sort) */
-    for (i = 0; i < n - 1; i++) {
-        for (j = i + 1; j < n; j++) {
-            if (pri[i] > pri[j]) {
-                /* Swap Priorities */
+    for (i = 0; i < n - 1; i++)
+    {
+        for (j = i + 1; j < n; j++)
+        {
+            if (pri[i] > pri[j])
+            {
                 temp = pri[i];
                 pri[i] = pri[j];
                 pri[j] = temp;
 
-                /* Swap Burst Times */
                 temp = bt[i];
                 bt[i] = bt[j];
                 bt[j] = temp;
 
-                /* Swap Process IDs */
                 temp = p[i];
                 p[i] = p[j];
                 p[j] = temp;
@@ -288,7 +705,8 @@ int main() {
     tat[0] = bt[0];
     tat_avg = tat[0];
 
-    for (i = 1; i < n; i++) {
+    for (i = 1; i < n; i++)
+    {
         wt[i] = wt[i - 1] + bt[i - 1];
         tat[i] = wt[i] + bt[i];
         wt_avg += wt[i];
@@ -296,13 +714,13 @@ int main() {
     }
 
     printf("\\nProcess\\tPriority\\tBurst Time\\tWaiting Time\\tTurnaround Time\\n");
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++)
+    {
         printf("P%d\\t\\t%d\\t\\t%d\\t\\t%d\\t\\t%d\\n", p[i], pri[i], bt[i], wt[i], tat[i]);
     }
 
     printf("\\nAverage Waiting Time: %.2f\\n", wt_avg / n);
     printf("Average Turnaround Time: %.2f\\n", tat_avg / n);
-
     return 0;
 }`
   },
@@ -316,10 +734,8 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Memory Structures:</strong> Memory partition sizes are stored in <code>blocks[50]</code>, and memory needs for incoming processes are stored in <code>processes[50]</code>.</p>
-        <p><strong>2. Allocation Search Loops:</strong> An outer loop iterates through each process <code>i</code>. For each process, an inner loop scans partitions <code>j</code> from 0 to <code>nb-1</code>.</p>
-        <p><strong>3. Match and Deduct:</strong> If <code>blocks[j] >= processes[i]</code>, we allocate the process here. We update <code>allocated = blocks[j]</code>, subtract the requested memory from the partition: <code>blocks[j] -= processes[i]</code>, and immediately exit the inner loop using <code>break</code>.</p>
-        <p><strong>4. Output Table:</strong> If a partition was allocated, we print the partition size. If no partition was found, we output 'Can\'t be allocated'.</p>
+        <p><strong>1. Searching Blocks:</strong> For each process <code>i</code>, we scan memory blocks <code>j</code> from 0 to <code>nb-1</code>.</p>
+        <p><strong>2. Space Allocation:</strong> If <code>block[j] &gt;= process[i]</code>, we allocate the process here: we assign <code>allocation[i] = block[j]</code> and subtract the allocated memory: <code>block[j] = block[j] - process[i]</code>. We then break the loop to process the next request.</p>
       </div>
     `,
     explanation: `
@@ -328,43 +744,51 @@ int main() {
         <p>First Fit allocates memory partitions sequentially. It assigns a process to the first block of sufficient size. This method is fast but can cause memory fragmentation at the beginning of the partition list.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
-    int blocks[50], processes[50];
-    int nb, np, i, j, allocated;
+int main()
+{
+    int no_of_process, no_of_blocks;
+    int block[10], process[10], allocation[10];
+    int i, j;
 
     printf("Enter number of blocks: ");
-    scanf("%d", &nb);
-    for (i = 0; i < nb; i++) {
-        printf("Enter size of Block %d: ", i + 1);
-        scanf("%d", &blocks[i]);
-    }
+    scanf("%d", &no_of_blocks);
+    printf("Enter size of each block: ");
+    for (i = 0; i < no_of_blocks; i++)
+        scanf("%d", &block[i]);
 
     printf("Enter number of processes: ");
-    scanf("%d", &np);
-    for (i = 0; i < np; i++) {
-        printf("Enter size of Process %d: ", i + 1);
-        scanf("%d", &processes[i]);
+    scanf("%d", &no_of_process);
+    printf("Enter size of each process: ");
+    for (i = 0; i < no_of_process; i++)
+    {
+        scanf("%d", &process[i]);
+        allocation[i] = -1;
     }
 
-    printf("\\nAfter Allocation:\\n");
-    printf("Process No\\tProcess Size\\tBlock Size\\n");
-
-    for (i = 0; i < np; i++) {
-        allocated = -1;
-        for (j = 0; j < nb; j++) {
-            if (blocks[j] >= processes[i]) {
-                allocated = blocks[j];
-                blocks[j] -= processes[i];
+    for (i = 0; i < no_of_process; i++)
+    {
+        for (j = 0; j < no_of_blocks; j++)
+        {
+            if (block[j] >= process[i])
+            {
+                allocation[i] = block[j];
+                block[j] = block[j] - process[i];
                 break;
             }
         }
-        if (allocated != -1)
-            printf("%d\\t\\t%d\\t\\t%d\\n", i + 1, processes[i], allocated);
+    }
+
+    printf("After Allocation:\\n");
+    printf("Process No\\tProcess Size\\tBlock Size\\n");
+    for (i = 0; i < no_of_process; i++)
+    {
+        if (allocation[i] != -1)
+            printf("%d\\t\\t%d\\t\\t%d\\n", i + 1, process[i], allocation[i]);
         else
-            printf("%d\\t\\t%d\\t\\tCan't be allocated\\n", i + 1, processes[i]);
+            printf("%d\\t\\t%d\\t\\tCan't be allocated\\n", i + 1, process[i]);
     }
     return 0;
 }`
@@ -379,14 +803,9 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Best Match Index:</strong> For each process <code>i</code>, we initialize a tracker variable <code>bestIdx = -1</code> to store the best block index found so far.</p>
-        <p><strong>2. Full Partition Scan:</strong> The inner loop scans all partitions <code>j</code>. If partition <code>j</code> fits (<code>blocks[j] >= processes[i]</code>), we compare it:
-          <ul>
-            <li>If <code>bestIdx == -1</code>, this is our first potential fit. We set <code>bestIdx = j</code>.</li>
-            <li>Else, if the current block is smaller than the previously tracked best fit (<code>blocks[bestIdx] > blocks[j]</code>), we update <code>bestIdx = j</code> to minimize fragmentation.</li>
-          </ul>
-        </p>
-        <p><strong>3. Executing Allocation:</strong> After scanning all partitions, if <code>bestIdx != -1</code>, we assign the process, subtract the memory: <code>blocks[bestIdx] -= processes[i]</code>, and print the allocated partition size.</p>
+        <p><strong>1. Best Index Tracker:</strong> For each process, we initialize <code>bestindex = -1</code>.</p>
+        <p><strong>2. Scan for tightest fit:</strong> We check all blocks. If <code>block[j] &gt;= process[i]</code>, we check if it is the first fit found (<code>bestindex == -1</code>) or if it leaves less wasted space than our current tracker (<code>block[bestindex] &gt; block[j]</code>). If so, we update <code>bestindex = j</code>.</p>
+        <p><strong>3. Execution:</strong> After the loop, we complete the allocation on <code>bestindex</code>.</p>
       </div>
     `,
     explanation: `
@@ -395,44 +814,58 @@ int main() {
         <p>Best Fit searches for the partition that minimizes leftover space. It requires scanning the entire partition table, which increases processing time. This approach can also leave behind very small, unusable fragments of free memory.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
-    int blocks[50], processes[50];
-    int nb, np, i, j, bestIdx;
+int main()
+{
+    int no_of_process, no_of_blocks;
+    int block[10], process[10], allocation[10];
+    int i, j, bestindex = -1;
 
     printf("Enter number of blocks: ");
-    scanf("%d", &nb);
-    for (i = 0; i < nb; i++) {
-        printf("Enter size of Block %d: ", i + 1);
-        scanf("%d", &blocks[i]);
-    }
+    scanf("%d", &no_of_blocks);
+    printf("Enter size of each block: ");
+    for (i = 0; i < no_of_blocks; i++)
+        scanf("%d", &block[i]);
 
     printf("Enter number of processes: ");
-    scanf("%d", &np);
-    for (i = 0; i < np; i++) {
-        printf("Enter size of Process %d: ", i + 1);
-        scanf("%d", &processes[i]);
+    scanf("%d", &no_of_process);
+    printf("Enter size of each process: ");
+    for (i = 0; i < no_of_process; i++)
+    {
+        scanf("%d", &process[i]);
+        allocation[i] = -1;
     }
 
-    printf("\\nAfter Allocation:\\n");
-    printf("Process No\\tProcess Size\\tBlock Size\\n");
-
-    for (i = 0; i < np; i++) {
-        bestIdx = -1;
-        for (j = 0; j < nb; j++) {
-            if (blocks[j] >= processes[i]) {
-                if (bestIdx == -1 || blocks[bestIdx] > blocks[j])
-                    bestIdx = j;
+    for (i = 0; i < no_of_process; i++)
+    {
+        bestindex = -1;
+        for (j = 0; j < no_of_blocks; j++)
+        {
+            if (block[j] >= process[i])
+            {
+                if (bestindex == -1)
+                    bestindex = j;
+                else if (block[bestindex] > block[j])
+                    bestindex = j;
             }
         }
-        if (bestIdx != -1) {
-            printf("%d\\t\\t%d\\t\\t%d\\n", i + 1, processes[i], blocks[bestIdx]);
-            blocks[bestIdx] -= processes[i];
-        } else {
-            printf("%d\\t\\t%d\\t\\tCan't be allocated\\n", i + 1, processes[i]);
+        if (bestindex != -1)
+        {
+            allocation[i] = block[bestindex];
+            block[bestindex] = block[bestindex] - process[i];
         }
+    }
+
+    printf("After Allocation:\\n");
+    printf("Process No\\tProcess Size\\tBlock Size\\n");
+    for (i = 0; i < no_of_process; i++)
+    {
+        if (allocation[i] != -1)
+            printf("%d\\t\\t%d\\t\\t%d\\n", i + 1, process[i], allocation[i]);
+        else
+            printf("%d\\t\\t%d\\t\\tCan't be allocated\\n", i + 1, process[i]);
     }
     return 0;
 }`
@@ -447,14 +880,9 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Maximum Gap Index:</strong> We initialize <code>worstIdx = -1</code> to track the largest block partition that can accommodate the current process.</p>
-        <p><strong>2. Maximizing left over memory:</strong> We scan all partition partitions. If a partition fits, we check:
-          <ul>
-            <li>If <code>worstIdx == -1</code>, we store this block index.</li>
-            <li>Else, if the current block size is larger than the previously tracked worst fit (<code>blocks[worstIdx] < blocks[j]</code>), we update <code>worstIdx = j</code>.</li>
-          </ul>
-        </p>
-        <p><strong>3. Subtracting allocation:</strong> If <code>worstIdx</code> is valid after the scan, we allocate the process, subtract the memory size: <code>blocks[worstIdx] -= processes[i]</code>, and move to the next process.</p>
+        <p><strong>1. Worst Index Tracker:</strong> Initialize <code>worstindex = -1</code> for each process.</p>
+        <p><strong>2. Scan for largest fit:</strong> We compare fitting blocks to find the largest available partition: <code>block[worstindex] &lt; block[j]</code>. If found, we update <code>worstindex = j</code>.</p>
+        <p><strong>3. Execution:</strong> We allocate the block and subtract the process size from the partition.</p>
       </div>
     `,
     explanation: `
@@ -463,44 +891,58 @@ int main() {
         <p>Worst Fit allocates processes to the largest available memory partition. The goal is to leave behind a leftover block that is large enough to be useful for subsequent processes. Like Best Fit, it requires scanning the entire partition list.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
-    int blocks[50], processes[50];
-    int nb, np, i, j, worstIdx;
+int main()
+{
+    int no_of_process, no_of_blocks;
+    int block[10], process[10], allocation[10];
+    int i, j, worstindex = -1;
 
     printf("Enter number of blocks: ");
-    scanf("%d", &nb);
-    for (i = 0; i < nb; i++) {
-        printf("Enter size of Block %d: ", i + 1);
-        scanf("%d", &blocks[i]);
-    }
+    scanf("%d", &no_of_blocks);
+    printf("Enter size of each block: ");
+    for (i = 0; i < no_of_blocks; i++)
+        scanf("%d", &block[i]);
 
     printf("Enter number of processes: ");
-    scanf("%d", &np);
-    for (i = 0; i < np; i++) {
-        printf("Enter size of Process %d: ", i + 1);
-        scanf("%d", &processes[i]);
+    scanf("%d", &no_of_process);
+    printf("Enter size of each process: ");
+    for (i = 0; i < no_of_process; i++)
+    {
+        scanf("%d", &process[i]);
+        allocation[i] = -1;
     }
 
-    printf("\\nAfter Allocation:\\n");
-    printf("Process No\\tProcess Size\\tBlock Size\\n");
-
-    for (i = 0; i < np; i++) {
-        worstIdx = -1;
-        for (j = 0; j < nb; j++) {
-            if (blocks[j] >= processes[i]) {
-                if (worstIdx == -1 || blocks[worstIdx] < blocks[j])
-                    worstIdx = j;
+    for (i = 0; i < no_of_process; i++)
+    {
+        worstindex = -1;
+        for (j = 0; j < no_of_blocks; j++)
+        {
+            if (block[j] >= process[i])
+            {
+                if (worstindex == -1)
+                    worstindex = j;
+                else if (block[worstindex] < block[j])
+                    worstindex = j;
             }
         }
-        if (worstIdx != -1) {
-            printf("%d\\t\\t%d\\t\\t%d\\n", i + 1, processes[i], blocks[worstIdx]);
-            blocks[worstIdx] -= processes[i];
-        } else {
-            printf("%d\\t\\t%d\\t\\tCan't be allocated\\n", i + 1, processes[i]);
+        if (worstindex != -1)
+        {
+            allocation[i] = block[worstindex];
+            block[worstindex] = block[worstindex] - process[i];
         }
+    }
+
+    printf("After Allocation:\\n");
+    printf("Process No\\tProcess Size\\tBlock Size\\n");
+    for (i = 0; i < no_of_process; i++)
+    {
+        if (allocation[i] != -1)
+            printf("%d\\t\\t%d\\t\\t%d\\n", i + 1, process[i], allocation[i]);
+        else
+            printf("%d\\t\\t%d\\t\\tCan't be allocated\\n", i + 1, process[i]);
     }
     return 0;
 }`
@@ -508,18 +950,16 @@ int main() {
 
   {
     id: "prod-cons",
-    category: "Synchronization",
+    category: "Process Synchronization",
     title: "Producer-Consumer",
     description: "Simulates a circular buffer shared between a producer and consumer. Demonstrates semaphore-based synchronization concepts.",
     mismatch_alert: null,
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Bounded Buffer Setup:</strong> The queue is implemented as a fixed-size array: <code>buffer[5]</code>, with a capacity limit defined by <code>n = 5</code>. We track operations using read/write pointers: <code>in</code> (write position) and <code>out</code> (read position).</p>
-        <p><strong>2. Check for Buffer Full:</strong> Before adding an item, we check if the next write position matches the read position: <code>if ((out + 1) % n == in)</code>. If true, the buffer is full, and the write operation is blocked.</p>
-        <p><strong>3. Write and Wrap Around:</strong> If space is available, the program prompts for input, moves the write pointer forward using modulo arithmetic: <code>out = (out + 1) % n</code>, and stores the item at that index.</p>
-        <p><strong>4. Check for Buffer Empty:</strong> Before removing an item, we check if the pointers match: <code>if (out == in)</code>. If true, the buffer is empty, and the read operation is blocked.</p>
-        <p><strong>5. Read and Wrap Around:</strong> If items exist, the program moves the read pointer forward: <code>in = (in + 1) % n</code>, retrieves the item, and clears the read slot.</p>
+        <p><strong>1. Pointers mapping:</strong> Shared memory pointers mapping: <code>in</code> (write index), <code>out</code> (read index), and <code>buff</code> (buffer start) are assigned offsets in the segment.</p>
+        <p><strong>2. Check for Buffer Full:</strong> If <code>(*out + 1) % n == *in</code>, the circular queue is full, and we block (call <code>sleep(3)</code>).</p>
+        <p><strong>3. Circular Write:</strong> If space exists, we prompt for input, increment the write index (<code>*out = (*out + 1) % n</code>), and write the item.</p>
       </div>
     `,
     explanation: `
@@ -528,46 +968,101 @@ int main() {
         <p>This program uses modulo arithmetic to implement a circular queue. This structure allows memory reuse without shifting elements. In standard operating systems, semaphores and mutexes are used to coordinate access between producer and consumer processes.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Pure C implementation. Fully compatible with Turbo C++ 3.0.</div>`,
-    code: `#include <stdio.h>
-#define n 5
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Compile and run the producer and consumer programs in separate terminals.</div>`,
+    code: `// --- producer.c ---
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-int buffer[n];
-int in = 0, out = 0;
-
-void produce() {
+int main()
+{
+    int shm_id;
+    key_t SomeKey;
+    int *shm, *in, *out, *buff;
     int item;
-    if ((out + 1) % n == in) {
-        printf("Buffer is Full! Baker is sleeping.\\n");
-        return;
+    int n = 10;
+    SomeKey = ftok(".", 'a');
+    shm_id = shmget(SomeKey, 12 * sizeof(int), IPC_CREAT | 0666);
+    if (shm_id < 0)
+    {
+        printf("shmget error\\n");
+        exit(1);
     }
-    printf("Enter integer item to produce: ");
-    scanf("%d", &item);
-    out = (out + 1) % n;
-    buffer[out] = item;
-    printf("Produced item: %d at slot %d\\n", buffer[out], out);
+    shm = (int *)shmat(shm_id, NULL, 0);
+    if (shm == (int *)-1)
+    {
+        printf("shmat error\\n");
+        exit(1);
+    }
+    in = shm;
+    out = shm + 1;
+    buff = shm + 2;
+    *in = 0;
+    *out = 0;
+    while (1)
+    {
+        if ((*out + 1) % n == *in)
+            sleep(3);
+        else
+        {
+            printf("\\nEnter an item: ");
+            scanf("%d", &item);
+            *out = (*out + 1) % n;
+            buff[*out] = item;
+            printf("\\nOUT = %d IN = %d\\n", *out, *in);
+        }
+    }
+    shmdt(shm);
+    shmctl(shm_id, IPC_RMID, NULL);
+    return 0;
 }
 
-void consume() {
-    if (out == in) {
-        printf("Buffer is Empty! Customer is sleeping.\\n");
-        return;
-    }
-    in = (in + 1) % n;
-    printf("Consumed item: %d from slot %d\\n", buffer[in], in);
-    buffer[in] = 0;
-}
+// --- consumer.c ---
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
-int main() {
-    int choice;
-    while (1) {
-        printf("\\n1. Produce Item   2. Consume Item   3. Exit\\n");
-        printf("Choose option: ");
-        scanf("%d", &choice);
-        if (choice == 1) produce();
-        else if (choice == 2) consume();
-        else break;
+int main()
+{
+    int shm_id;
+    key_t SomeKey;
+    int *shm, *in, *out, *buff;
+    int n = 10;
+    SomeKey = ftok(".", 'a');
+    shm_id = shmget(SomeKey, 12 * sizeof(int), 0666);
+    if (shm_id < 0)
+    {
+        printf("shmget error\\n");
+        exit(1);
     }
+    shm = (int *)shmat(shm_id, NULL, 0);
+    if (shm == (int *)-1)
+    {
+        printf("shmat error\\n");
+        exit(1);
+    }
+    in = shm;
+    out = shm + 1;
+    buff = shm + 2;
+    while (1)
+    {
+        if (*out == *in)
+            sleep(3);
+        else
+        {
+            *in = (*in + 1) % n;
+            printf("\\nReceived item: %d", buff[*in]);
+            printf("\\nOUT = %d IN = %d\\n", *out, *in);
+        }
+    }
+    shmdt(shm);
+    shmctl(shm_id, IPC_RMID, NULL);
     return 0;
 }`
   },
@@ -581,10 +1076,9 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Memory Frames Buffer:</strong> The array <code>temp[10]</code> simulates physical memory slots, initialized to <code>-1</code> to indicate empty frames.</p>
-        <p><strong>2. Scan for Hit:</strong> For each incoming page in the reference string, we scan the frame buffer. If a match is found (<code>refStr[m] == temp[j]</code>), we mark it as a hit (<code>hit = 1</code>) and skip replacement.</p>
-        <p><strong>3. Queue-Based Eviction:</strong> If a page fault occurs, we determine the replacement index using modulo arithmetic: <code>pagefaults % nf</code>, where <code>nf</code> is the number of frames. This replaces the oldest page in the queue.</p>
-        <p><strong>4. Tracking Faults:</strong> The page fault counter is incremented, and we output the current frame state to display the replacement process.</p>
+        <p><strong>1. Temporary Frame list:</strong> Array <code>temp[]</code> tracks current memory frames, initialized to -1.</p>
+        <p><strong>2. Scan for Hit:</strong> For each page reference, if it exists in the frame array, we set hit flag <code>s = 1</code> and decrement the fault counter to balance the increment that follows.</p>
+        <p><strong>3. FIFO Eviction:</strong> If a fault occurs (<code>s == 0</code>), we evict the oldest page in circular order using: <code>(pagefaults - 1) % frames</code>.</p>
       </div>
     `,
     explanation: `
@@ -593,42 +1087,54 @@ int main() {
         <p>FIFO page replacement manages memory frames as a queue. The page at the head of the queue is evicted when a page fault occurs and all frames are full. This algorithm can experience Bélády's anomaly, where adding more memory frames increases the page fault rate.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C++ 3.0.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
-    int refStr[50], temp[10];
-    int np, nf, i, j, m, pagefaults = 0;
-    int hit;
-
-    printf("Enter the number of Pages: ");
-    scanf("%d", &np);
-    for (i = 0; i < np; i++) {
-        printf("Enter page value [%d]: ", i + 1);
-        scanf("%d", &refStr[i]);
+int main()
+{
+    int referenceString[10];
+    int pagefaults = 0;
+    int m, n, s, pages, frames;
+    printf("\\nEnter the number of Pages:\\t");
+    scanf("%d", &pages);
+    printf("\\nEnter reference string values:\\n");
+    for (m = 0; m < pages; m++)
+    {
+        printf("Value No. [%d]:\\t", m + 1);
+        scanf("%d", &referenceString[m]);
     }
-
-    printf("What are the total number of frames: ");
-    scanf("%d", &nf);
-
-    for (i = 0; i < nf; i++) temp[i] = -1;
-
-    printf("\\n");
-    for (m = 0; m < np; m++) {
-        hit = 0;
-        for (j = 0; j < nf; j++) {
-            if (refStr[m] == temp[j]) { hit = 1; break; }
+    printf("\\nWhat are the total number of frames:\\t");
+    scanf("%d", &frames);
+    int temp[frames];
+    for (m = 0; m < frames; m++)
+        temp[m] = -1;
+    for (m = 0; m < pages; m++)
+    {
+        s = 0;
+        for (n = 0; n < frames; n++)
+        {
+            if (referenceString[m] == temp[n])
+            {
+                s++;
+                pagefaults--;
+            }
         }
-        if (!hit) {
-            temp[pagefaults % nf] = refStr[m];
-            pagefaults++;
-            printf("Ref Page [%d] -> Fault\\n", refStr[m]);
-        } else {
-            printf("Ref Page [%d] -> Hit\\n", refStr[m]);
+        pagefaults++;
+        if ((pagefaults <= frames) && (s == 0))
+        {
+            temp[m] = referenceString[m];
+        }
+        else if (s == 0)
+        {
+            temp[(pagefaults - 1) % frames] = referenceString[m];
+        }
+        printf("\\n");
+        for (n = 0; n < frames; n++)
+        {
+            printf("%d\\t", temp[n]);
         }
     }
-
-    printf("\\nTotal page faults: %d\\n", pagefaults);
+    printf("\\nTotal page faults:\\t%d\\n", pagefaults);
     return 0;
 }`
   },
@@ -642,10 +1148,9 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Last-Used Timestamps:</strong> We maintain an array <code>t[10]</code> to store access order timestamps for each frame. An integer counter <code>counter</code> is incremented with each page reference.</p>
-        <p><strong>2. Handling a Hit:</strong> If the page is already in a frame (<code>hitIdx != -1</code>), we update its access time in <code>t[hitIdx]</code> to the current counter value.</p>
-        <p><strong>3. Empty Frame Check:</strong> If the page is missing, we first scan for empty frames. If found, we load the page and set its timestamp.</p>
-        <p><strong>4. Least Recently Used Search:</strong> If all frames are full, we scan the timestamp array to find the minimum value: <code>if (t[j] < t[lruIdx])</code>. The index with the smallest value represents the page that has not been accessed for the longest time, which is then evicted.</p>
+        <p><strong>1. Least Recently Used helper:</strong> <code>findLRU(time, n)</code> scans access times to find the index with the minimum value, representing the least recently used frame position.</p>
+        <p><strong>2. Access Order Tracking:</strong> On page hit, we update the timestamp <code>time[j] = counter</code>.</p>
+        <p><strong>3. Replacement:</strong> On page fault, if all frames are full, we call <code>findLRU</code> to locate and replace the oldest timestamp page.</p>
       </div>
     `,
     explanation: `
@@ -654,57 +1159,78 @@ int main() {
         <p>LRU approximates optimal page replacement by assuming that pages accessed recently are likely to be accessed again soon. The algorithm evicts the page with the oldest access timestamp. While efficient, it requires hardware support or runtime overhead to track timestamps.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C++ 3.0.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
-    int refStr[50], frames[10], t[10];
-    int np, nf, i, j, faults = 0, counter = 0;
-    int hitIdx, emptyIdx, lruIdx;
-
-    printf("Enter the number of pages: ");
-    scanf("%d", &np);
-    for (i = 0; i < np; i++) {
-        printf("Enter page value [%d]: ", i + 1);
-        scanf("%d", &refStr[i]);
+int findLRU(int time[], int n)
+{
+    int i, minimum = time[0], pos = 0;
+    for (i = 1; i < n; ++i)
+    {
+        if (time[i] < minimum)
+        {
+            minimum = time[i];
+            pos = i;
+        }
     }
+    return pos;
+}
 
+int main()
+{
+    int nf, np, frames[10], pages[30];
+    int counter = 0, time[10];
+    int flag1, flag2, i, j, pos, faults = 0;
     printf("Enter the number of frames: ");
     scanf("%d", &nf);
-    for (i = 0; i < nf; i++) { frames[i] = -1; t[i] = 0; }
-
-    printf("\\n");
-    for (i = 0; i < np; i++) {
-        counter++;
-        hitIdx = -1;
-        for (j = 0; j < nf; j++) {
-            if (frames[j] == refStr[i]) { hitIdx = j; break; }
+    printf("Enter the number of pages: ");
+    scanf("%d", &np);
+    printf("Enter reference string : ");
+    for (i = 0; i < np; i++)
+        scanf("%d", &pages[i]);
+    for (i = 0; i < nf; ++i)
+        frames[i] = -1;
+    for (i = 0; i < np; ++i)
+    {
+        flag1 = flag2 = 0;
+        for (j = 0; j < nf; ++j)
+        {
+            if (frames[j] == pages[i])
+            {
+                counter++;
+                time[j] = counter;
+                flag1 = flag2 = 1;
+                break;
+            }
         }
-
-        if (hitIdx != -1) {
-            t[hitIdx] = counter;
-            printf("Ref Page [%d] -> Hit\\n", refStr[i]);
-        } else {
-            emptyIdx = -1;
-            for (j = 0; j < nf; j++) {
-                if (frames[j] == -1) { emptyIdx = j; break; }
+        if (flag1 == 0)
+        {
+            for (j = 0; j < nf; ++j)
+            {
+                if (frames[j] == -1)
+                {
+                    counter++;
+                    faults++;
+                    frames[j] = pages[i];
+                    time[j] = counter;
+                    flag2 = 1;
+                    break;
+                }
             }
-            if (emptyIdx != -1) {
-                frames[emptyIdx] = refStr[i];
-                t[emptyIdx] = counter;
-            } else {
-                lruIdx = 0;
-                for (j = 1; j < nf; j++)
-                    if (t[j] < t[lruIdx]) lruIdx = j;
-                frames[lruIdx] = refStr[i];
-                t[lruIdx] = counter;
-            }
+        }
+        if (flag2 == 0)
+        {
+            pos = findLRU(time, nf);
+            counter++;
             faults++;
-            printf("Ref Page [%d] -> Fault\\n", refStr[i]);
+            frames[pos] = pages[i];
+            time[pos] = counter;
         }
+        printf("\\n");
+        for (j = 0; j < nf; ++j)
+            printf("%d\\t", frames[j]);
     }
-
-    printf("\\nTotal page faults = %d\\n", faults);
+    printf("\\n\\nTotal page faults = %d\\n", faults);
     return 0;
 }`
   },
@@ -718,11 +1244,8 @@ int main() {
     deconstruction: `
       <div class="doc-section">
         <h4>Step-by-Step Code Deconstruction</h4>
-        <p><strong>1. Resource Matrices:</strong> We declare matrices <code>alloc[10][10]</code> (allocated resources), <code>max[10][10]</code> (maximum requirements), and <code>need[10][10]</code> (remaining needs: <code>max - alloc</code>). The array <code>avail[10]</code> tracks available system resources.</p>
-        <p><strong>2. Completion Flags:</strong> The array <code>finish[10]</code> tracks process completion, initialized to <code>0</code> (not finished) for all processes.</p>
-        <p><strong>3. Safety Evaluation Loop:</strong> We loop up to <code>np</code> times to find a process that can execute. A process is eligible if it is not finished (<code>!finish[i]</code>) and its resource needs do not exceed available resources: <code>need[i][j] <= avail[j]</code> for all resource types <code>j</code>.</p>
-        <p><strong>4. Allocation Release:</strong> When an eligible process completes, we reclaim its allocated resources: <code>avail[j] += alloc[i][j]</code>, mark it finished (<code>finish[i] = 1</code>), and add it to the safe sequence.</p>
-        <p><strong>5. Safety Verification:</strong> If a full loop execution occurs without finding any eligible process, the system cannot guarantee safe execution, and we report a potential deadlock risk.</p>
+        <p><strong>1. Safety Matrices:</strong> We declare allocation, max, and need (<code>max - allocation</code>) matrices to track resource variables.</p>
+        <p><strong>2. Safety Evaluation:</strong> We loop through processes. If <code>finish[i] == 0</code> and the process's remaining resource requirements do not exceed current available resources (<code>need[i][r] &lt;= work[r]</code>), we simulate execution. We add the process's allocated resources to the working pool (<code>work[r] += allocation[i][r]</code>), mark it finished (<code>finish[i] = 1</code>), and record it in the safe sequence.</p>
       </div>
     `,
     explanation: `
@@ -731,118 +1254,152 @@ int main() {
         <p>The Banker's algorithm is a deadlock avoidance method. It models resource allocation requests to check if granting them would leave the system in a safe state. A state is safe if there is at least one sequence in which all processes can run to completion.</p>
       </div>
     `,
-    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with Turbo C++ 3.0. Max array dimension is 10x10.</div>`,
+    compatibility: `<div class="doc-compat-note"><strong>Note:</strong> Fully compatible with GCC.</div>`,
     code: `#include <stdio.h>
 
-int main() {
-    int alloc[10][10], max[10][10], need[10][10], avail[10];
-    int finish[10], safeSeq[10];
-    int np, nr, i, j, k, count = 0;
+int main()
+{
+    int no_of_process, no_of_resource;
+    int available[10], work[10];
+    int max[10][10], need[10][10], allocation[10][10];
+    int i, j, flag = 0, ss[10], k = 0, finish[10];
 
-    printf("Enter number of processes: ");
-    scanf("%d", &np);
-    printf("Enter number of resources: ");
-    scanf("%d", &nr);
+    printf("Enter the number of processes and resources: ");
+    scanf("%d%d", &no_of_process, &no_of_resource);
+    printf("Enter allocation matrix\\n");
+    for (i = 0; i < no_of_process; i++)
+        for (j = 0; j < no_of_resource; j++)
+            scanf("%d", &allocation[i][j]);
 
-    printf("Enter Allocation matrix:\\n");
-    for (i = 0; i < np; i++)
-        for (j = 0; j < nr; j++)
-            scanf("%d", &alloc[i][j]);
-
-    printf("Enter Max matrix:\\n");
-    for (i = 0; i < np; i++)
-        for (j = 0; j < nr; j++)
+    printf("Enter max matrix\\n");
+    for (i = 0; i < no_of_process; i++)
+        for (j = 0; j < no_of_resource; j++)
             scanf("%d", &max[i][j]);
 
-    printf("Enter Available resources:\\n");
-    for (j = 0; j < nr; j++) scanf("%d", &avail[j]);
-
-    for (i = 0; i < np; i++) {
-        finish[i] = 0;
-        for (j = 0; j < nr; j++)
-            need[i][j] = max[i][j] - alloc[i][j];
+    printf("Enter available resources\\n");
+    for (i = 0; i < no_of_resource; i++)
+    {
+        scanf("%d", &available[i]);
+        work[i] = available[i];
     }
 
-    while (count < np) {
-        int found = 0;
-        for (i = 0; i < np; i++) {
-            if (!finish[i]) {
-                int ok = 1;
-                for (j = 0; j < nr; j++)
-                    if (need[i][j] > avail[j]) { ok = 0; break; }
-                if (ok) {
-                    for (j = 0; j < nr; j++) avail[j] += alloc[i][j];
-                    safeSeq[count++] = i;
+    for (i = 0; i < no_of_process; i++)
+        finish[i] = 0;
+
+    for (i = 0; i < no_of_process; i++)
+        for (j = 0; j < no_of_resource; j++)
+            need[i][j] = max[i][j] - allocation[i][j];
+
+    printf("Need Matrix is\\n");
+    for (i = 0; i < no_of_process; i++)
+    {
+        for (j = 0; j < no_of_resource; j++)
+            printf("%d ", need[i][j]);
+        printf("\\n");
+    }
+
+    for (j = 0; j < no_of_process; j++)
+    {
+        for (i = 0; i < no_of_process; i++)
+        {
+            flag = 0;
+            if (finish[i] == 0)
+            {
+                for (int r = 0; r < no_of_resource; r++)
+                {
+                    if (need[i][r] > work[r])
+                    {
+                        flag = 1;
+                        break;
+                    }
+                }
+                if (flag == 0)
+                {
+                    for (int r = 0; r < no_of_resource; r++)
+                        work[r] += allocation[i][r];
+                    ss[k] = i;
+                    k++;
                     finish[i] = 1;
-                    found = 1;
                 }
             }
         }
-        if (!found) { printf("System is NOT in safe state!\\n"); return 0; }
     }
 
-    printf("Safe Sequence is: ");
-    for (k = 0; k < np; k++)
-        printf("P%d%s", safeSeq[k], k < np - 1 ? " -> " : "\\n");
-    printf("System is in SAFE STATE!\\n");
+    flag = 1;
+    for (i = 0; i < no_of_process; i++)
+    {
+        if (finish[i] == 0)
+        {
+            flag = 0;
+            printf("System is not safe\\n");
+            break;
+        }
+    }
+
+    if (flag == 1)
+    {
+        printf("Safe Sequence is: ");
+        for (i = 0; i < no_of_process - 1; i++)
+            printf("P%d -> ", ss[i]);
+        printf("P%d\\n", ss[no_of_process - 1]);
+    }
     return 0;
 }`
   }
 ];
 
 const syntaxesData = {
-  description: "C Standard Library calls and operations commonly used in algorithmic OS Lab programs.",
+  description: "C Standard Library calls and operations commonly used in Linux GCC OS Lab programs.",
   items: [
     {
-      id: "syn-printf",
-      title: "printf()",
-      syntax: "#include <stdio.h>\nint printf(const char *format, ...);",
-      desc: "Prints formatted output to stdout. Format specifiers: %d (integer), %f (float), \\tab (tabulator), \\n (newline)."
+      id: "syn-fork",
+      title: "fork()",
+      syntax: "#include <unistd.h>\n#include <sys/types.h>\npid_t fork(void);",
+      desc: "Creates a child process. Returns child PID to parent, 0 to child, -1 on error."
     },
     {
-      id: "syn-scanf",
-      title: "scanf()",
-      syntax: "#include <stdio.h>\nint scanf(const char *format, ...);",
-      desc: "Reads formatted input from stdin. Requires passing addresses of variables: scanf(\"%d\", &variable)."
+      id: "syn-execv",
+      title: "execv()",
+      syntax: "#include <unistd.h>\nint execv(const char *path, char *const argv[]);",
+      desc: "Replaces the current process image with a new one. argv[] must be NULL-terminated."
     },
     {
-      id: "syn-modulo",
-      title: "Modulo Operator (%)",
-      syntax: "result = dividend % divisor;",
-      desc: "Returns the integer remainder of division. Crucial in circular queues and FIFO buffers: index = (index + 1) % size."
+      id: "syn-shmget",
+      title: "shmget() / shmat()",
+      syntax: "#include <sys/ipc.h>\n#include <sys/shm.h>\nint shmget(key_t key, size_t size, int shmflg);\nvoid *shmat(int shmid, const void *shmaddr, int shmflg);",
+      desc: "Creates shared memory (shmget) and attaches it to the process (shmat). Use shmdt() to detach."
     },
     {
-      id: "syn-for-loop",
-      title: "C89 Loop Structure",
-      syntax: "int i;\nfor (i = 0; i < n; i++) {\n    /* code */\n}",
-      desc: "Turbo C follows the C89 standard. Loop control variables must be declared at the top of the function, not within the for statement itself."
+      id: "syn-stat",
+      title: "stat()",
+      syntax: "#include <sys/stat.h>\n#include <sys/types.h>\nint stat(const char *path, struct stat *buf);",
+      desc: "Fills buf with file metadata: size (st_size), mode (st_mode), timestamps (st_mtime, st_atime)."
     }
   ]
 };
 
 const shortcutsData = {
-  description: "Keyboard shortcuts used in the simulated Turbo C++ 3.0 IDE.",
+  description: "Linux Shell commands used to write, compile, and run C code in your lab.",
   shortcuts: [
-    { key: "F2", action: "Save", desc: "Simulates saving the source file to C:\\TC\\BIN\\ directory." },
-    { key: "F3", action: "Open", desc: "Triggers a simulated file selection dialog." },
-    { key: "Alt + F9", action: "Compile", desc: "Runs static code checks for Turbo C compatibility issues (Unix calls, VLAs, C99 style loops)." },
-    { key: "F9", action: "Compile (Quick)", desc: "Quick compile shortcut." },
-    { key: "Ctrl + F9", action: "Run", desc: "Compiles and executes the algorithm inside the simulated DOSBox terminal." },
-    { key: "Alt + F5", action: "User Screen", desc: "Toggles between the editor and terminal output screen." },
-    { key: "ESC", action: "Return/Close", desc: "Closes the current terminal overlay or compiler message window." }
+    { key: "gedit filename.c", action: "Open Gedit Text Editor", desc: "Opens the C code in the Gedit editor tab. Type your code here." },
+    { key: "Save Button", action: "Save code to file system", desc: "You must click the green 'Save' button in Gedit. Compilation only reads the saved file!" },
+    { key: "gcc filename.c -o a", action: "Compile Code", desc: "Uses GCC to compile the saved C file into an executable file named 'a'. Errors/warnings print to terminal." },
+    { key: "./a", action: "Run Executable", desc: "Runs the compiled executable program directly inside the active terminal." },
+    { key: "clear", action: "Clear Terminal Screen", desc: "Clears all terminal output lines." },
+    { key: "help", action: "Print command help", desc: "Prints these command guidelines." }
   ],
   mismatches: [
     {
-      title: "Variable Length Arrays (VLAs) in C89",
-      desc: "Turbo C follows C89 which does not support Variable Length Arrays (e.g. declaring int arr[n] where n is a runtime variable). Always define arrays with a fixed upper limit constant (e.g. int arr[50]) or allocate memory dynamically."
+      title: "POSIX/Linux Headers",
+      desc: "Headers like <unistd.h>, <sys/types.h>, <sys/shm.h>, <dirent.h>, and <sys/msg.h> are POSIX/UNIX headers. They are fully supported in your Linux/GCC lab environment."
     },
     {
-      title: "Loop Declarations",
-      desc: "Declaring loop counters directly inside the loop structure (e.g. for (int i = 0; i < n; i++)) is a C99 standard feature. In Turbo C, all variables must be declared at the top of the scope block."
+      title: "Variable Length Arrays (VLAs)",
+      desc: "In modern GCC (C99 and later), dynamically-sized arrays (e.g. int temp[frames] where frames is a variable) are fully supported. However, using fixed bounds (e.g. int temp[20]) remains best practice."
     },
     {
-      title: "Data Type Limits",
-      desc: "In 16-bit DOS (Turbo C), the default 'int' is 16-bit, with values ranging from -32,768 to 32,767. If your calculation can exceed this range, declare variables as 'long int' (32-bit)."
+      title: "C99 Loop Declarations",
+      desc: "Declaring loop counters directly inside the loop structure (e.g. for (int i = 0; ...)) is supported by GCC. If you want to force C89 compliance, compile with: gcc filename.c -o a -std=c89."
     }
   ]
 };

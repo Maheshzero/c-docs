@@ -370,158 +370,173 @@ html, body {
 
 
 /* ------------ TURBO C IDE ------------ */
-.tc-ide {
-  height: 280px; /* default height, sizer will adjust this dynamically */
+/* ------------ TERMINAL & GEDIT WORKSPACE ------------ */
+.workspace-panel {
+  height: 320px; /* default height, sizer will adjust this dynamically */
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   position: relative;
+  border-bottom: 1px solid var(--border);
 }
 
-.tc-titlebar {
+.workspace-tabs-header {
+  display: flex;
+  background: var(--ide-header);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.w-tab-btn {
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 6px 16px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+
+.w-tab-btn:hover {
+  background: var(--bg-2);
+  color: var(--text);
+}
+
+.w-tab-btn.active {
+  background: var(--bg-1);
+  color: var(--accent);
+  font-weight: bold;
+}
+
+.workspace-view {
+  display: none;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.workspace-view.active {
+  display: flex;
+}
+
+/* Linux Bash Terminal */
+.terminal-shell {
+  flex: 1;
+  background: #000000;
+  color: #d0d0d0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: text;
+}
+
+.terminal-lines-content {
+  flex: 1;
+  overflow-y: auto;
+  margin-bottom: 5px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.terminal-line {
+  line-height: 1.5;
+}
+
+.terminal-input-line {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.terminal-prompt {
+  color: #4af626; /* neon green bash prompt */
+  margin-right: 4px;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: inherit;
+  caret-color: #ffffff;
+  width: 100%;
+}
+
+/* Gedit Window */
+.gedit-window {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #f6f6f6;
+  overflow: hidden;
+}
+
+.gedit-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: var(--ide-header);
-  border-bottom: 1px solid var(--border);
-  padding: 5px 10px;
-  font-family: var(--font-mono);
+  background: #e8e8e8;
+  border-bottom: 1px solid #d0d0d0;
+  padding: 5px 12px;
+  flex-shrink: 0;
+}
+
+.gedit-tab {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 500;
+  color: #333333;
+  background: #ffffff;
+  border: 1px solid #d0d0d0;
+  border-bottom: none;
+  padding: 4px 14px;
+  border-radius: var(--radius) var(--radius) 0 0;
+  margin-bottom: -6px;
+  user-select: none;
+}
+
+.gedit-save-btn {
+  background: #2e7d32; /* green save button */
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-ui);
   font-size: 11px;
-  color: var(--text-dim);
+  font-weight: 600;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: background-color 0.1s;
 }
 
-.tc-filetitle {
-  color: var(--accent);
-  font-size: 11px;
+.gedit-save-btn:hover {
+  background: #1b5e20;
 }
 
-.tc-menubar {
-  display: flex;
-  gap: 0;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--border);
-  font-size: 11.5px;
-  color: var(--text-dim);
-}
-
-.tc-menubar span {
-  padding: 4px 10px;
-  cursor: default;
-}
-
-.tc-menu-item {
-  cursor: pointer !important;
-}
-.tc-menu-item:hover {
-  background: var(--bg-3);
-  color: var(--accent);
-}
-
-/* Code editor textarea */
-.tc-editor {
-  width: 100%;
+.gedit-editor {
   flex: 1;
-  min-height: 50px;
-  background: var(--ide-bg);
-  color: var(--text);
+  width: 100%;
   border: none;
   outline: none;
   resize: none;
+  background: #ffffff; /* light gedit background */
+  color: #1a1a1a;
   font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.65;
   padding: 12px 14px;
-  caret-color: var(--ide-cursor);
   tab-size: 4;
 }
 
-.tc-editor::selection {
-  background: var(--accent-dim);
-  color: var(--bg);
-}
-
-/* Message window */
-.tc-message-window {
-  position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--bg-1);
-  border: 1px solid var(--border-mid);
-  border-radius: var(--radius);
-  z-index: 10;
-  flex-direction: column;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
-  overflow: hidden;
-}
-
-.tc-message-titlebar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-2);
-  border-bottom: 1px solid var(--border);
-  padding: 6px 12px;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--text-dim);
-}
-
-.tc-message-titlebar button {
-  background: transparent;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 13px;
-  line-height: 1;
-  padding: 0 2px;
-}
-.tc-message-titlebar button:hover { color: var(--text); }
-
-.tc-message-content {
-  padding: 12px 14px;
-  font-family: var(--font-mono);
-  font-size: 11.5px;
-  color: var(--text);
-  line-height: 1.6;
-  max-height: 130px;
-  overflow-y: auto;
-}
-
-.tc-error-line {
-  color: var(--danger);
-  cursor: pointer;
-  padding: 1px 0;
-}
-.tc-error-line:hover { text-decoration: underline; }
-
-/* Status bar */
-.tc-statusbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0;
-  background: var(--bg-3);
-  border-top: 1px solid var(--border);
-}
-
-.tc-status-btn {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--text-dim);
-  background: transparent;
-  border: none;
-  border-right: 1px solid var(--border);
-  padding: 4px 8px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.1s, color 0.1s;
-}
-.tc-status-btn:hover {
-  background: var(--bg-2);
-  color: var(--accent);
-}
-.tc-status-btn:last-child { border-right: none; }
 
 
 /* ------------ TABS PANEL ------------ */
@@ -956,43 +971,22 @@ html, body {
     border-left: none;
   }
 
-  .tc-ide {
+  .workspace-panel {
     border-bottom: 1px solid var(--border);
   }
 
-  .tc-editor {
+  .gedit-editor {
     height: 160px;
     font-size: 11.5px;
   }
 
-  .tc-message-window {
-    left: 5%;
-    right: 5%;
-    width: 90%;
+  .terminal-shell {
+    font-size: 11.5px;
   }
 
   .code-block {
     font-size: 11px;
     padding: 12px;
-  }
-
-  /* Stretch full-screen terminal on mobile */
-  .terminal-titlebar {
-    width: 100%;
-    max-width: 100vw;
-    border: none;
-    border-bottom: 1px solid var(--term-border);
-    padding: 10px 14px;
-    border-radius: 0;
-  }
-
-  .terminal-lines {
-    width: 100%;
-    max-width: 100vw;
-    height: calc(100vh - 40px);
-    border: none;
-    border-radius: 0;
-    font-size: 11.5px;
   }
 }
 

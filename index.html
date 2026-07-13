@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>C Docs — OS Lab Reference</title>
-  <meta name="description" content="Interactive documentation and Turbo C simulator for Operating Systems lab programs. Includes fork, exec, IPC, memory allocation, and page replacement algorithms." />
+  <meta name="description" content="Interactive C documentation and Linux command-line terminal simulator for Operating Systems lab programs." />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -65,57 +65,54 @@
         </div>
       </section>
 
-      <!-- RIGHT: IDE + TABS -->
+      <!-- RIGHT: TERMINAL & GEDIT WORKSPACE -->
       <aside class="right-panel">
 
-        <!-- TURBO C IDE EDITOR -->
-        <div class="tc-ide">
-          <!-- Title bar -->
-          <div class="tc-titlebar">
-            <span>Turbo C++ 3.0</span>
-            <span id="tc-file-title" class="tc-filetitle">NONAME00.C</span>
+        <!-- WORKSPACE PANEL -->
+        <div class="workspace-panel">
+          
+          <!-- Workspace Tabs Header -->
+          <div class="workspace-tabs-header">
+            <button id="workspace-tab-terminal" class="w-tab-btn active">Terminal</button>
+            <button id="workspace-tab-gedit" class="w-tab-btn">Gedit Editor</button>
           </div>
 
-          <!-- Menu bar -->
-          <div class="tc-menubar">
-            <span>File</span>
-            <span>Edit</span>
-            <span id="tc-menu-compile" class="tc-menu-item" title="Alt+F9">Compile</span>
-            <span id="tc-menu-run" class="tc-menu-item" title="Ctrl+F9">Run</span>
-            <span>Debug</span>
-            <span>Options</span>
-          </div>
-
-          <!-- Editor textarea -->
-          <textarea id="editor-textarea" class="tc-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-
-          <!-- Message window (compile output) -->
-          <div id="message-window" class="tc-message-window" style="display:none;">
-            <div class="tc-message-titlebar">
-              <span>Message</span>
-              <button onclick="document.getElementById('message-window').style.display='none'">×</button>
+          <!-- Tab View 1: Linux Bash Terminal -->
+          <div id="view-terminal" class="workspace-view active">
+            <div class="terminal-shell">
+              <div id="terminal-lines" class="terminal-lines-content">
+                <div class="terminal-line">Welcome to Ubuntu 24.04 LTS (GNU/Linux 6.8.0-generic)</div>
+                <div class="terminal-line">Type 'help' or check the 'How to Run' tab below to begin.</div>
+                <div class="terminal-line"></div>
+              </div>
+              <div class="terminal-input-line">
+                <span class="terminal-prompt">user@uce-lab:~/os_lab$ </span>
+                <input id="terminal-input" class="terminal-input cursor-blink" type="text" autocomplete="off" spellcheck="false" />
+              </div>
             </div>
-            <div id="message-window-content" class="tc-message-content"></div>
           </div>
 
-          <!-- Status bar -->
-          <div class="tc-statusbar">
-            <button id="tc-status-help"    class="tc-status-btn">F1 Help</button>
-            <button id="tc-status-compile" class="tc-status-btn">Alt-F9 Compile</button>
-            <button id="tc-status-run"     class="tc-status-btn">Ctrl-F9 Run</button>
-            <button id="tc-status-save"    class="tc-status-btn">F2 Save</button>
-            <button id="tc-status-open"    class="tc-status-btn">F3 Open</button>
-            <button id="tc-status-screen"  class="tc-status-btn">Alt-F5 Screen</button>
+          <!-- Tab View 2: Gedit Text Editor -->
+          <div id="view-gedit" class="workspace-view">
+            <div class="gedit-window">
+              <div class="gedit-header">
+                <span id="gedit-filename-tab" class="gedit-tab active">program.c</span>
+                <button id="gedit-save-btn" class="gedit-save-btn">Save</button>
+              </div>
+              <textarea id="editor-textarea" class="gedit-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
+            </div>
           </div>
+
         </div>
 
+        <!-- Vertical Resize Handle -->
         <div id="tc-resize-handle" class="tc-resize-handle"></div>
 
-        <!-- TABS: SYNTAX / SHORTCUTS -->
+        <!-- BOTTOM HELP TABS -->
         <div class="tabs-panel">
           <div class="tabs-header">
             <button id="tab-btn-syntax"    class="tab-btn active">Syntax Reference</button>
-            <button id="tab-btn-shortcuts" class="tab-btn">Shortcuts & Notes</button>
+            <button id="tab-btn-shortcuts" class="tab-btn">How to Run</button>
           </div>
 
           <div id="tab-content-syntax" class="tab-content active">
@@ -134,19 +131,8 @@
     <!-- Mobile Bottom Nav -->
     <div class="mobile-nav-bottom">
       <button id="mobile-tab-docs" class="mobile-tab-btn active">Documentation</button>
-      <button id="mobile-tab-ide" class="mobile-tab-btn">Turbo C IDE</button>
+      <button id="mobile-tab-ide" class="mobile-tab-btn">Workspace</button>
     </div>
-  </div>
-
-  <!-- ============================================================
-       DOSBOX TERMINAL OVERLAY
-  ============================================================ -->
-  <div id="terminal-window" class="terminal-overlay" style="display:none;">
-    <div class="terminal-titlebar">
-      <span>DOSBox — Program Output</span>
-      <button id="terminal-close-btn" class="terminal-close-btn">✕ Close</button>
-    </div>
-    <div id="terminal-lines" class="terminal-lines"></div>
   </div>
 
   <!-- ============================================================
