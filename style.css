@@ -388,6 +388,8 @@ html, body {
 
 .workspace-tabs-header {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   background: var(--ide-header);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -400,7 +402,7 @@ html, body {
   color: var(--text-dim);
   font-family: var(--font-mono);
   font-size: 11.5px;
-  padding: 6px 16px;
+  padding: 8px 16px;
   cursor: pointer;
   transition: background 0.1s, color 0.1s;
 }
@@ -414,6 +416,46 @@ html, body {
   background: var(--bg-1);
   color: var(--accent);
   font-weight: bold;
+}
+
+.ws-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-right: 10px;
+}
+
+.ws-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 600;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background-color 0.1s, transform 0.1s;
+}
+
+.ws-btn:active {
+  transform: scale(0.96);
+}
+
+.ws-btn.compile-btn {
+  background: #0284c7;
+}
+.ws-btn.compile-btn:hover {
+  background: #0369a1;
+}
+
+.ws-btn.run-btn {
+  background: #22c55e;
+}
+.ws-btn.run-btn:hover {
+  background: #16a34a;
 }
 
 .workspace-view {
@@ -483,7 +525,7 @@ html, body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: #f6f6f6;
+  background: #1e1e1e;
   overflow: hidden;
 }
 
@@ -491,8 +533,8 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #e8e8e8;
-  border-bottom: 1px solid #d0d0d0;
+  background: #252526;
+  border-bottom: 1px solid #181818;
   padding: 5px 12px;
   flex-shrink: 0;
 }
@@ -501,9 +543,9 @@ html, body {
   font-family: var(--font-ui);
   font-size: 12px;
   font-weight: 500;
-  color: #333333;
-  background: #ffffff;
-  border: 1px solid #d0d0d0;
+  color: #cccccc;
+  background: #1e1e1e;
+  border: 1px solid #181818;
   border-bottom: none;
   padding: 4px 14px;
   border-radius: var(--radius) var(--radius) 0 0;
@@ -512,20 +554,21 @@ html, body {
 }
 
 .gedit-save-btn {
-  background: #2e7d32; /* green save button */
-  color: #ffffff;
-  border: none;
+  background: #444444;
+  color: #e0e0e0;
+  border: 1px solid #555555;
   border-radius: var(--radius);
   font-family: var(--font-ui);
   font-size: 11px;
   font-weight: 600;
   padding: 3px 12px;
   cursor: pointer;
-  transition: background-color 0.1s;
+  transition: background-color 0.1s, color 0.1s, border-color 0.1s;
 }
 
 .gedit-save-btn:hover {
-  background: #1b5e20;
+  background: #555555;
+  color: #ffffff;
 }
 
 .gedit-editor {
@@ -534,10 +577,11 @@ html, body {
   border: none;
   outline: none;
   resize: none;
-  background: #ffffff; /* light gedit background */
-  color: #1a1a1a;
+  background: #1e1e1e; /* dark editor background */
+  color: #d4d4d4; /* readable light grey text */
+  caret-color: #ffffff;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.65;
   padding: 12px 14px;
   tab-size: 4;
@@ -1009,4 +1053,18 @@ html, body {
 
 .tc-resize-handle:hover, .tc-resize-handle.dragging {
   background: var(--accent);
+}
+
+@media (max-width: 480px) {
+  .w-tab-btn {
+    padding: 8px 10px !important;
+  }
+  .ws-btn {
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+  }
+  .ws-actions-group {
+    gap: 4px !important;
+    padding-right: 6px !important;
+  }
 }

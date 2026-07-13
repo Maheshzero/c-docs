@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>C Docs — OS Lab Reference</title>
   <meta name="description" content="Interactive C documentation and Linux command-line terminal simulator for Operating Systems lab programs." />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -13,7 +14,7 @@
   <div class="mobile-nav-top">
     <button id="mobile-menu-btn" class="mobile-btn">☰ Topics</button>
     <span class="mobile-title">C Docs</span>
-    <button id="mobile-run-btn" class="mobile-btn">▶ Run</button>
+    <div style="width: 80px;"></div> <!-- Spacer replacing the old run button -->
   </div>
 
   <!-- Sidebar Backdrop -->
@@ -73,8 +74,14 @@
           
           <!-- Workspace Tabs Header -->
           <div class="workspace-tabs-header">
-            <button id="workspace-tab-terminal" class="w-tab-btn active">Terminal</button>
-            <button id="workspace-tab-gedit" class="w-tab-btn">Gedit Editor</button>
+            <div class="ws-tabs-group" style="display: flex;">
+              <button id="workspace-tab-terminal" class="w-tab-btn active">Terminal</button>
+              <button id="workspace-tab-gedit" class="w-tab-btn">Gedit Editor</button>
+            </div>
+            <div class="ws-actions-group">
+              <button id="ws-compile-btn" class="ws-btn compile-btn">⚙ Compile</button>
+              <button id="ws-run-btn" class="ws-btn run-btn">▶ Run</button>
+            </div>
           </div>
 
           <!-- Tab View 1: Linux Bash Terminal -->

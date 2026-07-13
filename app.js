@@ -34,7 +34,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Mobile navigation
   const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const mobileRunBtn = document.getElementById("mobile-run-btn");
+  const wsCompileBtn = document.getElementById("ws-compile-btn");
+  const wsRunBtn = document.getElementById("ws-run-btn");
   const mobileTabDocs = document.getElementById("mobile-tab-docs");
   const mobileTabIde = document.getElementById("mobile-tab-ide");
   const sidebarBackdrop = document.getElementById("sidebar-backdrop");
@@ -282,9 +283,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const prevText = geditSaveBtn.innerText;
     geditSaveBtn.innerText = "Saved!";
     geditSaveBtn.style.backgroundColor = "#2e7d32";
+    geditSaveBtn.style.borderColor = "#388e3c";
+    geditSaveBtn.style.color = "#ffffff";
     setTimeout(() => {
       geditSaveBtn.innerText = prevText;
       geditSaveBtn.style.backgroundColor = "";
+      geditSaveBtn.style.borderColor = "";
+      geditSaveBtn.style.color = "";
     }, 1000);
 
     writeTerminalTextLine(`[Disk] Saved file ${getTopicFilename(topicsData.find(t => t.id === activeTopicId))}`);
@@ -572,10 +577,19 @@ document.addEventListener("DOMContentLoaded", () => {
     sidebarBackdrop.classList.remove("active");
   }
 
-  // Mobile Top Run button
-  mobileRunBtn.addEventListener("click", () => {
+  // Workspace Action Buttons (Compile and Run)
+  wsCompileBtn.addEventListener("click", () => {
     setMobileTab("ide");
-    triggerAutoRunSequence();
+    setWorkspaceTab("terminal");
+    const topic = topicsData.find(t => t.id === activeTopicId);
+    const filename = getTopicFilename(topic);
+    executeShellCommand(`gcc ${filename} -o a`);
+  });
+
+  wsRunBtn.addEventListener("click", () => {
+    setMobileTab("ide");
+    setWorkspaceTab("terminal");
+    executeShellCommand("./a");
   });
 
   // Mobile Bottom Tab View Switching
