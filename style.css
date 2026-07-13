@@ -120,6 +120,12 @@ html, body {
   text-transform: uppercase;
   margin-top: 2px;
 }
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
 
 .sidebar-menu {
   list-style: none;
