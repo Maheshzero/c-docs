@@ -128,7 +128,7 @@
           <div class="tabs-header">
             <button id="tab-btn-syntax"    class="tab-btn active">Syntax Reference</button>
             <button id="tab-btn-shortcuts" class="tab-btn">How to Run</button>
-            <button id="tab-btn-guide"     class="tab-btn">Sandbox Guide</button>
+            <button id="tab-btn-guide"     class="tab-btn">Student Guide</button>
           </div>
 
           <div id="tab-content-syntax" class="tab-content active">
@@ -142,29 +142,57 @@
 
           <div id="tab-content-guide" class="tab-content">
             <div class="guide-panel-content">
-              <h3>🎓 Linux &amp; Sandbox Simulation Playground</h3>
-              <p>This workspace operates as a full-featured mock Linux terminal and code editor. You can write custom programs, compile them, and view their execution outputs directly in the terminal!</p>
+              <h3>🎓 Step-by-Step Student Lab Guide</h3>
+              <p>Welcome to <strong>os-uce</strong>! This website is an interactive study reference and mock playground designed specifically for the UCE OS Lab syllabus. Follow these guidelines to navigate and run your C programs.</p>
               
-              <h4>📂 Virtual Filesystem Commands</h4>
-              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: square;">
-                <li><code>ls</code>: Lists all C source files and compiled binaries (highlighted in green).</li>
-                <li><code>gedit &lt;filename&gt;.c</code>: Opens the file in Gedit. If the file does not exist, a new empty file is created.</li>
-                <li><code>cat &lt;filename&gt;</code>: Outputs the raw text content of the file directly to the terminal.</li>
-                <li><code>rm &lt;filename&gt;</code>: Deletes the file from the virtual filesystem.</li>
+              <h4>📱 Mobile vs. 💻 Laptop Viewport Layouts</h4>
+              <p>The interface automatically adapts based on your screen size:</p>
+              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: circle;">
+                <li><strong>Laptop/Desktop Layout</strong>: Displays side-by-side panels. Sidebar menu on the left, step-by-step Documentation in the middle, and the Workspace (Gedit + Terminal) on the right.</li>
+                <li><strong>Mobile Phone Layout</strong>: Toggle panels using the bottom bar:
+                  <ul style="margin-left: 18px; margin-top: 3px; list-style-type: square;">
+                    <li><strong>Documentation Tab</strong>: Shows explanations, code listings, and syntax lists.</li>
+                    <li><strong>Workspace Tab</strong>: Contains the active Terminal and Gedit Code Editor.</li>
+                    <li><strong>☰ Topics Drawer</strong> (top nav): Slide open to change programs.</li>
+                  </ul>
+                </li>
               </ul>
-              
-              <h4>⚙️ Compilation &amp; Execution</h4>
+
+              <h4>🎯 How to Compile and Run a Program</h4>
+              <p>To run any of the 18 syllabus algorithms, follow this workflow:</p>
+              <ol style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: decimal;">
+                <li>Select a program (e.g., <strong>Basic fork()</strong> or <strong>FCFS Scheduling</strong>).</li>
+                <li>Go to the <strong>Workspace</strong> panel, then click the <strong>Gedit Editor</strong> tab.</li>
+                <li>Edit or examine the C source code. If you make modifications, Gedit will show a dirty state indicator (<code>*</code>) prefixing the filename.</li>
+                <li><strong>Click Save</strong> (or type <code>Ctrl+S</code> equivalent). <em>Important: GCC reads code from disk; if you don't save, it compiles the last saved state!</em></li>
+                <li>Switch to the <strong>Terminal</strong> tab (or click the shortcut buttons on the right of the header):
+                  <ul style="margin-left: 18px; margin-top: 3px; list-style-type: disc;">
+                    <li>Click <strong>⚙ Compile</strong> (or type <code>gcc filename.c -o a</code>) to compile.</li>
+                    <li>Click <strong>▶ Run</strong> (or type <code>./a</code>) to run the compiled binary executable.</li>
+                  </ul>
+                </li>
+              </ol>
+
+              <h4>🐚 Simulated Linux Commands Reference</h4>
+              <p>Inside the Terminal shell, you can type real Linux commands to interact with your code:</p>
               <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: square;">
-                <li><code>gcc &lt;filename&gt;.c -o a</code>: Compiles the source file into an output binary named <code>a</code>.</li>
-                <li><code>./a</code>: Executes the compiled binary inside the terminal shell.</li>
-                <li><strong>Dirty State Tracking</strong>: If you edit code, Gedit shows a modified indicator (<code>*</code>). Compiling a file while it has unsaved changes warns you that GCC is compiling the previously saved version on disk!</li>
+                <li><code>ls</code>: Lists all current files in the directory. Source files appear in grey, and compiled binaries (like <code>a</code>) appear in <span style="color: #22c55e; font-weight: bold;">green</span>.</li>
+                <li><code>gedit &lt;filename&gt;.c</code>: Opens the file in Gedit. If the file doesn't exist, a new blank file is created.</li>
+                <li><code>cat &lt;filename&gt;</code>: Prints the raw code or text content directly inside the terminal.</li>
+                <li><code>rm &lt;filename&gt;</code>: Deletes the file from the workspace filesystem.</li>
+                <li><code>clear</code>: Clears the terminal screen logs.</li>
+                <li><code>help</code>: Displays command options.</li>
               </ul>
-              
-              <h4>🧪 Generic Code Sandbox</h4>
-              <p>When you compile a custom file (e.g. <code>sandbox.c</code>), running <code>./a</code> dynamically scans your code. If it detects POSIX operations like <code>fork()</code>, shared memory, message queues, or multithreading, it simulates their runtime executions dynamically!</p>
-              
-              <h4 style="margin-top: 10px;">⚠️ Compiler Validations</h4>
-              <p>The compiler checks for common pitfalls: missing semicolons (<code>;</code>) throw syntax errors, and missing headers (e.g. <code>&lt;unistd.h&gt;</code> for <code>fork</code> or <code>&lt;sys/shm.h&gt;</code> for shared memory) trigger implicit declaration warnings.</p>
+
+              <h4>⚠️ Compiler Warnings &amp; Validations</h4>
+              <p>To prepare you for standard GCC behaviors, the mock compiler validates code against common pitfalls:</p>
+              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: square;">
+                <li><strong>Semicolons (<code>;</code>)</strong>: Omitted semicolons will fail compilation and throw syntax error logs in red.</li>
+                <li><strong>Implicit Declarations</strong>: Omitted headers (like <code>&lt;unistd.h&gt;</code> when using <code>fork()</code> or <code>&lt;sys/shm.h&gt;</code> when using <code>shmget()</code>) will print compiler warnings in yellow.</li>
+              </ul>
+
+              <h4>🧪 Code Sandbox Playground</h4>
+              <p>You can write custom files! Type <code>gedit sandbox.c</code>, write custom C code, click Save, Compile, and run <code>./a</code>. The terminal dynamically scans your custom code for POSIX structures (like thread spawning, process forks, or shared memory) and simulates their executions dynamically!</p>
             </div>
           </div>
         </div>
