@@ -29,6 +29,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
+          cp -f index.html dist/index.html || true
+          cp -f style.css dist/style.css || true
+          cp -f favicon.svg dist/favicon.svg || true
+          cp -rf css2 dist/css2 || true
           cp -f app.js dist/app.js || true
           cp -f compiler.js dist/compiler.js || true
           cp -f data.js dist/data.js || true
