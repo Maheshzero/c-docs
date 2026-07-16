@@ -48,6 +48,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy functions/_middleware.js --name oslab
+          command: deploy functions/_middleware.js --name oslab --compatibility-date 2026-07-16
         env:
           WRANGLER_CONFIG_DIR: .
