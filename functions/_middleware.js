@@ -67,7 +67,8 @@ export default {
     const body = hasNoBody ? null : response.body;
     const headers = new Headers(response.headers);
     const pathname = new URL(assetRequest.url).pathname;
-    if (!headers.has("content-type")) {
+    const contentType = headers.get("content-type");
+    if (!contentType || !contentType.trim()) {
       if (pathname.endsWith(".js")) {
         headers.set("Content-Type", "application/javascript; charset=utf-8");
       } else if (pathname.endsWith(".css")) {
