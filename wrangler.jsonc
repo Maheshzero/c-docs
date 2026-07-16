@@ -2,7 +2,6 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "oslab",
   "main": "functions/_middleware.js",
-  "type": "esm",
   "compatibility_date": "2026-07-16",
   "observability": {
     "enabled": true
