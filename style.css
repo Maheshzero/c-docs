@@ -1501,14 +1501,18 @@ body.light-theme .theme-toggle-btn:hover {
    MEDIA QUERIES
    ============================================================= */
 @media (max-width: 768px) {
-  .mobile-nav-top,
-  .mobile-nav-bottom { display: flex; }
+  .mobile-nav-top { display: flex; }
+  .mobile-nav-bottom { display: none !important; }
+
+  #workspace-toggle-btn {
+    display: none !important;
+  }
 
   .app-shell {
     flex-direction: column;
     height: 100vh;
     padding-top: 50px;
-    padding-bottom: 50px;
+    padding-bottom: 0px;
   }
 
   .sidebar {
@@ -1516,7 +1520,7 @@ body.light-theme .theme-toggle-btn:hover {
     top: 50px;
     left: -260px;
     width: 260px;
-    height: calc(100vh - 100px);
+    height: calc(100vh - 50px);
     z-index: 90;
     transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 4px 0 16px rgba(0, 0, 0, 0.7);
