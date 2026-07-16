@@ -1420,7 +1420,9 @@ body.light-theme .theme-toggle-btn:hover {
 .mobile-nav-top {
   display: none;
   height: 50px;
-  background: var(--bg-1);
+  background: rgba(9, 9, 11, 0.82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   align-items: center;
   justify-content: space-between;
@@ -1430,6 +1432,10 @@ body.light-theme .theme-toggle-btn:hover {
   left: 0;
   right: 0;
   z-index: 110;
+}
+
+body.light-theme .mobile-nav-top {
+  background: rgba(248, 250, 252, 0.82);
 }
 
 .mobile-title-group {

@@ -755,11 +755,17 @@ document.addEventListener("DOMContentLoaded", () => {
         DOM.mobileTabIde.classList.remove("active");
         contentArea.classList.add("view-docs");
         contentArea.classList.remove("view-ide");
+        if (DOM.mobileTerminalToggle) {
+          DOM.mobileTerminalToggle.textContent = "Workspace";
+        }
       } else {
         DOM.mobileTabDocs.classList.remove("active");
         DOM.mobileTabIde.classList.add("active");
         contentArea.classList.add("view-ide");
         contentArea.classList.remove("view-docs");
+        if (DOM.mobileTerminalToggle) {
+          DOM.mobileTerminalToggle.textContent = "Notes";
+        }
         
         if (State.activeWorkspaceTab === "terminal") {
           DOM.terminalInput.focus();
@@ -1305,6 +1311,9 @@ document.addEventListener("DOMContentLoaded", () => {
           DOM.compileTriggerBtn.textContent = "$ running...";
 
           UIManager.setWorkspaceTab("terminal");
+          if (window.innerWidth <= 768) {
+            UIManager.setMobileTab("ide");
+          }
 
           if (splitFiles) {
             Object.entries(splitFiles).forEach(([fn, content]) => {
