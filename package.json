@@ -1,0 +1,33 @@
+{
+  "name": "oslab-secure",
+  "version": "1.0.0",
+  "description": "Secure OS Lab Reference Platform on Cloudflare Workers",
+  "type": "module",
+  "scripts": {
+    "build": "node build-obfuscate.js",
+    "build:watch": "nodemon --exec 'node build-obfuscate.js' --watch app.js --watch compiler.js --watch data.js --watch docs_content.js",
+    "deploy": "npm run build && wrangler deploy --env production",
+    "dev": "wrangler dev",
+    "test": "node -c app.js && node -c compiler.js && echo '✅ All JS files valid'",
+    "lint": "eslint . --ext .js",
+    "serve:static": "python3 -m http.server 8000 --directory dist"
+  },
+  "keywords": [
+    "os-lab",
+    "cloudflare",
+    "workers",
+    "security",
+    "obfuscation"
+  ],
+  "author": "Anonymous",
+  "license": "UNLICENSED",
+  "private": true,
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "terser": "^5.49.0",
+    "wrangler": "^4.111.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
