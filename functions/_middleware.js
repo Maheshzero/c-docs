@@ -65,7 +65,24 @@ export default {
       response.status === 304 ||
       (response.status >= 300 && response.status < 400);
     const body = hasNoBody ? null : response.body;
-    const newResponse = new Response(body, response);
+    const headers = new Headers(response.headers);
+    const pathname = new URL(assetRequest.url).pathname;
+    if (!headers.has("content-type")) {
+      if (pathname.endsWith(".js")) {
+        headers.set("Content-Type", "application/javascript; charset=utf-8");
+      } else if (pathname.endsWith(".css")) {
+        headers.set("Content-Type", "text/css; charset=utf-8");
+      } else if (pathname.endsWith(".html")) {
+        headers.set("Content-Type", "text/html; charset=utf-8");
+      } else if (pathname.endsWith(".svg")) {
+        headers.set("Content-Type", "image/svg+xml");
+      }
+    }
+    const newResponse = new Response(body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
 
     newResponse.headers.set(
       "Content-Security-Policy",
