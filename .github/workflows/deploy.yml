@@ -33,11 +33,11 @@ jobs:
           cp -f style.css dist/style.css || true
           cp -f favicon.svg dist/favicon.svg || true
           cp -rf css2 dist/css2 || true
-          cp -f app.js dist/app.js || true
-          cp -f compiler.js dist/compiler.js || true
-          cp -f data.js dist/data.js || true
-          if [ -f docs_content.js ]; then cp -f docs_content.js dist/docs_content.js; fi
-          if [ -f marked.min.js ]; then cp -f marked.min.js dist/; fi
+          cp -f app.js dist/app.min.js || true
+          cp -f compiler.js dist/compiler.min.js || true
+          cp -f data.js dist/data.min.js || true
+          if [ -f docs_content.js ]; then cp -f docs_content.js dist/docs_content.min.js; fi
+          if [ -f marked.min.js ]; then cp -f marked.min.js dist/marked.min.js; fi
           echo "✅ Copied original assets into dist/"
       
       - name: Verify build output
