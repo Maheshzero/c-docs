@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '24'
-          # cache omitted to avoid failing when lockfile is missing
+          
       
       - name: Install dependencies
         run: npm install
@@ -29,7 +29,6 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist
-          # Copy the original JS assets into dist without minification/obfuscation
           cp -f app.js dist/app.js || true
           cp -f compiler.js dist/compiler.js || true
           cp -f data.js dist/data.js || true
@@ -45,7 +44,6 @@ jobs:
       - name: Install Wrangler v4 and deploy
         run: |
           set -euo pipefail
-          # Install Wrangler v4 locally (no save) and run deploy via npx
           npm install --no-save wrangler@4
           npx wrangler deploy --name oslab --compatibility-date 2026-07-16
         env:

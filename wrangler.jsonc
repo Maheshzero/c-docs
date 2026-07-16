@@ -11,6 +11,5 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
-  ],
-  # No build step: CI will populate `dist/` with original assets
+  ]
 }
