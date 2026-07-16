@@ -28,16 +28,16 @@ jobs:
       - name: Build (Copy original assets)
         run: |
           set -euo pipefail
-          mkdir -p dist/dist
+          mkdir -p dist
           cp -f index.html dist/index.html || true
           cp -f style.css dist/style.css || true
           cp -f favicon.svg dist/favicon.svg || true
           cp -rf css2 dist/css2 || true
-          cp -f app.js dist/dist/app.min.js || true
-          cp -f compiler.js dist/dist/compiler.min.js || true
-          cp -f data.js dist/dist/data.min.js || true
-          if [ -f docs_content.js ]; then cp -f docs_content.js dist/dist/docs_content.min.js; fi
-          if [ -f marked.min.js ]; then cp -f marked.min.js dist/dist/marked.min.js; fi
+          cp -f app.js dist/app.min.js || true
+          cp -f compiler.js dist/compiler.min.js || true
+          cp -f data.js dist/data.min.js || true
+          if [ -f docs_content.js ]; then cp -f docs_content.js dist/docs_content.min.js; fi
+          if [ -f marked.min.js ]; then cp -f marked.min.js dist/marked.min.js; fi
           echo "✅ Copied original assets into dist/"
       
       - name: Verify build output
