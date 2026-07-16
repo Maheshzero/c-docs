@@ -4,8 +4,8 @@
   "description": "Secure OS Lab Reference Platform on Cloudflare Workers",
   "type": "module",
   "scripts": {
-    "build": "node build-obfuscate.js",
-    "build:watch": "nodemon --exec 'node build-obfuscate.js' --watch app.js --watch compiler.js --watch data.js --watch docs_content.js",
+    "build": "mkdir -p dist && cp app.js compiler.js data.js docs_content.js marked.min.js dist/ || true",
+    "build:watch": "echo \"build:watch disabled (no obfuscation)\"",
     "deploy": "npm run build && wrangler deploy --env production",
     "dev": "wrangler dev",
     "test": "node -c app.js && node -c compiler.js && echo '✅ All JS files valid'",
@@ -23,8 +23,6 @@
   "license": "UNLICENSED",
   "private": true,
   "devDependencies": {
-    "nodemon": "^3.0.2",
-    "terser": "^5.49.0",
     "wrangler": "^4.111.0"
   },
   "engines": {

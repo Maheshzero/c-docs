@@ -1,25 +1,35 @@
 const compiler = {
-  // Analyze C code for Linux GCC compatibility and warnings
+  // Analyze C code for Linux GCC compatibility, syntax errors, and logical bugs
   compile: function(topicId, code) {
     const errors = [];
     const warnings = [];
+    const smartReports = [];
 
-    // Heuristic C syntax checks (similar to what GCC would catch)
-    
-    // 1. Missing semicolon check (excluding lines ending in block openings/closures, includes, defines, comments, etc.)
-    const lines = code.split("\n");
+    // --- Standard GCC-style checks ---
+    // Strip block comments /* ... */ while preserving newlines to keep line count accurate
+    let cleanCode = code.replace(/\/\*[\s\S]*?\*\//g, (match) => {
+      return match.replace(/[^\r\n]/g, " ");
+    });
+
+    const lines = cleanCode.split("\n");
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
+      let line = lines[i].trim();
+      
+      // Strip trailing line comments
+      const doubleSlashIdx = line.indexOf("//");
+      if (doubleSlashIdx !== -1) {
+        line = line.substring(0, doubleSlashIdx).trim();
+      }
+      
+      // Skip empty lines, preprocessors
       if (line && 
           !line.startsWith("#") && 
-          !line.startsWith("//") && 
-          !line.startsWith("/*") && 
           !line.endsWith(";") && 
           !line.endsWith("{") && 
           !line.endsWith("}") && 
           !line.endsWith(",") && 
-          !line.endsWith(")") && // skip function calls, conditions, loops ending in brackets
-          !line.endsWith(":") && // skip switch case labels
+          !line.endsWith(")") && 
+          !line.endsWith(":") && 
           !line.startsWith("for") && 
           !line.startsWith("if") && 
           !line.startsWith("while") && 
@@ -33,8 +43,7 @@ const compiler = {
       }
     }
 
-    // 2. Check for missing headers (implicit declarations)
-    // Basic fork/exec checks
+    // Implicit declarations check
     if (code.includes("fork") && !/#include\s*<unistd.h>/i.test(code)) {
       warnings.push({
         line: 1,
@@ -47,32 +56,24 @@ const compiler = {
         msg: `warning: implicit declaration of function 'execv' [-Wimplicit-function-declaration]`
       });
     }
-    
-    // Directory search checks
     if (code.includes("opendir") && !/#include\s*<dirent.h>/i.test(code)) {
       warnings.push({
         line: 1,
         msg: `warning: implicit declaration of function 'opendir' [-Wimplicit-function-declaration]`
       });
     }
-
-    // Stat checks
     if (code.includes("stat") && !/#include\s*<sys\/stat.h>/i.test(code)) {
       warnings.push({
         line: 1,
         msg: `warning: implicit declaration of function 'stat' [-Wimplicit-function-declaration]`
       });
     }
-
-    // Shared Memory checks
     if (code.includes("shmget") && !/#include\s*<sys\/shm.h>/i.test(code)) {
       warnings.push({
         line: 1,
         msg: `warning: implicit declaration of function 'shmget' [-Wimplicit-function-declaration]`
       });
     }
-
-    // Message Queue checks
     if (code.includes("msgget") && !/#include\s*<sys\/msg.h>/i.test(code)) {
       warnings.push({
         line: 1,
@@ -80,10 +81,279 @@ const compiler = {
       });
     }
 
+    // --- SMART COMPILER STATIC ANALYSIS ---
+
+    // 1. Bracket & Parentheses Mismatch (using state machine to ignore comments/strings)
+    let curlyCount = 0, parenCount = 0, squareCount = 0;
+    let inString = false;
+    let inChar = false;
+    let inLineComment = false;
+    let inBlockComment = false;
+    
+    for (let i = 0; i < code.length; i++) {
+      const char = code[i];
+      const nextChar = code[i + 1] || "";
+      
+      if (inBlockComment) {
+        if (char === '*' && nextChar === '/') {
+          inBlockComment = false;
+          i++;
+        }
+        continue;
+      }
+      if (inLineComment) {
+        if (char === '\n' || char === '\r') {
+          inLineComment = false;
+        }
+        continue;
+      }
+      if (inString) {
+        if (char === '\\') {
+          i++;
+        } else if (char === '"') {
+          inString = false;
+        }
+        continue;
+      }
+      if (inChar) {
+        if (char === '\\') {
+          i++;
+        } else if (char === "'") {
+          inChar = false;
+        }
+        continue;
+      }
+      
+      if (char === '/' && nextChar === '*') {
+        inBlockComment = true;
+        i++;
+        continue;
+      }
+      if (char === '/' && nextChar === '/') {
+        inLineComment = true;
+        i++;
+        continue;
+      }
+      if (char === '"') {
+        inString = true;
+        continue;
+      }
+      if (char === "'") {
+        inChar = true;
+        continue;
+      }
+      
+      if (char === '{') curlyCount++;
+      else if (char === '}') curlyCount--;
+      else if (char === '(') parenCount++;
+      else if (char === ')') parenCount--;
+      else if (char === '[') squareCount++;
+      else if (char === ']') squareCount--;
+    }
+    
+    if (curlyCount !== 0) {
+      smartReports.push({
+        type: "error",
+        msg: `mismatched curly braces '{ }' (found ${curlyCount > 0 ? "unclosed open brace" : "extra closing brace"})`
+      });
+    }
+    if (parenCount !== 0) {
+      smartReports.push({
+        type: "error",
+        msg: `mismatched parentheses '( )' (found ${parenCount > 0 ? "unclosed open parenthesis" : "extra closing parenthesis"})`
+      });
+    }
+    if (squareCount !== 0) {
+      smartReports.push({
+        type: "error",
+        msg: `mismatched square brackets '[ ]'`
+      });
+    }
+
+    // 2. Unclosed quotes check
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      const doubleSlashIdx = line.indexOf("//");
+      if (doubleSlashIdx !== -1) {
+        line = line.substring(0, doubleSlashIdx);
+      }
+      // Strip char literals to prevent single quote mismatches (e.g. '\'')
+      line = line.replace(/'(?:[^'\\]|\\.)*'/g, " ");
+      
+      const doubleQuotesCount = (line.match(/"/g) || []).length;
+      if (doubleQuotesCount % 2 !== 0) {
+        smartReports.push({
+          line: i + 1,
+          type: "error",
+          msg: `unclosed double quote character (")`
+        });
+      }
+    }
+
+    // 3. Bad control flows (e.g. if x == 0)
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith("if ") || line.startsWith("if(")) {
+        // check if has parenthesis after if
+        if (!/\bif\s*\(/i.test(line)) {
+          smartReports.push({
+            line: i + 1,
+            type: "error",
+            msg: `syntax error: 'if' condition must be enclosed in parentheses (e.g., 'if (condition)')`
+          });
+        }
+      }
+      if (line.startsWith("while ") || line.startsWith("while(")) {
+        if (!/\bwhile\s*\(/i.test(line)) {
+          smartReports.push({
+            line: i + 1,
+            type: "error",
+            msg: `syntax error: 'while' condition must be enclosed in parentheses`
+          });
+        }
+      }
+    }
+
+    // 4. Uninitialized Variables & Undeclared Variables Analysis
+    const declaredVars = new Set();
+    const initializedVars = new Set();
+    const usedVars = [];
+
+    // Simple C regex parser for variable declarations
+    // Matches: int x, y = 10, z;
+    const typeRegex = /\b(int|float|double|char|pid_t)\s+([^;]+);/;
+    lines.forEach((line, lineIdx) => {
+      const match = line.match(typeRegex);
+      if (match) {
+        const decls = match[2].split(",");
+        decls.forEach(decl => {
+          const parts = decl.split("=");
+          const varName = parts[0].trim().replace(/^\*+/, ""); // strip pointer prefix
+          if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(varName)) {
+            declaredVars.add(varName);
+            if (parts[1]) {
+              initializedVars.add(varName);
+            }
+          }
+        });
+      }
+    });
+
+    // Parse usage
+    lines.forEach((line, lineIdx) => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith("#") || trimmed.startsWith("//") || trimmed.startsWith("/*")) return;
+
+      // Check assignments like: x = 10; or scanf("%d", &x);
+      declaredVars.forEach(vName => {
+        // match variable on the left side of assignments
+        const assignRegex = new RegExp(`\\b${vName}\\s*=[^=]`);
+        const scanfRegex = new RegExp(`&${vName}\\b`);
+        if (assignRegex.test(line) || scanfRegex.test(line)) {
+          initializedVars.add(vName);
+        }
+
+        // match usage on right side or inside function args
+        const useRegex = new RegExp(`[^&a-zA-Z0-9_]${vName}\\b`);
+        if (useRegex.test(line) && !line.includes(`${vName} =`) && !line.includes(`&${vName}`)) {
+          usedVars.push({ name: vName, line: lineIdx + 1 });
+        }
+      });
+    });
+
+    // Generate uninitialized warnings
+    usedVars.forEach(usage => {
+      if (!initializedVars.has(usage.name)) {
+        smartReports.push({
+          line: usage.line,
+          type: "warning",
+          msg: `variable '${usage.name}' may be used uninitialized in this function`
+        });
+        // Avoid duplicate warnings for same variable
+        initializedVars.add(usage.name);
+      }
+    });
+
+    // 5. Infinite Loops Check (while(1) / for(;;))
+    let inInfiniteLoop = false;
+    let loopStartLine = 0;
+    let hasExitCondition = false;
+    let braceLevel = 0;
+
+    lines.forEach((line, lineIdx) => {
+      const trimmed = line.trim();
+      if (/\bwhile\s*\(\s*1\s*\)/i.test(trimmed) || /\bfor\s*\(\s*;\s*;\s*\)/i.test(trimmed)) {
+        inInfiniteLoop = true;
+        loopStartLine = lineIdx + 1;
+        hasExitCondition = false;
+        braceLevel = 0;
+      }
+
+      if (inInfiniteLoop) {
+        if (trimmed.includes("{")) braceLevel++;
+        if (trimmed.includes("}")) {
+          braceLevel--;
+          if (braceLevel <= 0) {
+            // reached loop end
+            if (!hasExitCondition) {
+              smartReports.push({
+                line: loopStartLine,
+                type: "warning",
+                msg: `infinite loop detected: loop has no apparent exit condition (break, return, or exit)`
+              });
+            }
+            inInfiniteLoop = false;
+          }
+        }
+        if (/\b(break|return|exit)\b/.test(trimmed)) {
+          hasExitCondition = true;
+        }
+      }
+    });
+
+    // 6. Unreachable Code
+    let afterUnreachableCmd = false;
+    lines.forEach((line, lineIdx) => {
+      const trimmed = line.trim();
+      if (afterUnreachableCmd) {
+        if (trimmed && trimmed !== "}" && !trimmed.startsWith("case") && !trimmed.startsWith("default")) {
+          smartReports.push({
+            line: lineIdx + 1,
+            type: "warning",
+            msg: `unreachable code: statement is located after a return, exit, or execv call`
+          });
+          afterUnreachableCmd = false; // report once per block
+        }
+      }
+      if (/\b(return|exit|execv)\b/.test(trimmed)) {
+        afterUnreachableCmd = true;
+      }
+      if (trimmed.includes("}")) {
+        afterUnreachableCmd = false;
+      }
+    });
+
+    // 7. IPC/Threading Mismatch Warnings
+    if (code.includes("pthread_join") && !code.includes("pthread_create")) {
+      smartReports.push({
+        type: "warning",
+        msg: `threading bug: 'pthread_join' is called but 'pthread_create' was not found`,
+        hint: `Add '#include <pthread.h>' at top of file and compile with: gcc -pthread program.c -o program`
+      });
+    }
+    if ((code.includes("shmat") || code.includes("shmdt")) && !code.includes("shmget")) {
+      smartReports.push({
+        type: "warning",
+        msg: `IPC bug: shared memory attachment/detachment called without a preceding 'shmget'`,
+        hint: `Call shmget() first to create/get the shared memory segment before attaching with shmat()`
+      });
+    }
+
     return {
       success: errors.length === 0,
       errors: errors,
-      warnings: warnings
+      warnings: warnings,
+      smartReports: smartReports
     };
   },
 

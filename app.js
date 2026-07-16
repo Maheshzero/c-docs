@@ -1,797 +1,1491 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // --- DOM Elements ---
-  const sidebarMenu = document.getElementById("sidebar-menu-list");
-  const docCategory = document.getElementById("doc-category");
-  const docTitle = document.getElementById("doc-title");
-  const docDesc = document.getElementById("doc-description");
-  const docBody = document.getElementById("doc-body");
-  const docCodeFilename = document.getElementById("doc-code-filename");
-  const docCodeCode = document.getElementById("doc-code-code");
-  const copyBtn = document.getElementById("copy-code-btn");
-  const compatibilityAlert = document.getElementById("compatibility-alert");
-  const warningText = document.getElementById("warning-text");
+  // =========================================================================
+  // 1. CONFIGURATION & STATIC DICTIONARIES
+  // =========================================================================
+  const Config = {
+    topicFilenames: {
+      "fork-basic": "fork_basic.c",
+      "fork-loop": "fork_loop.c",
+      "execv-call": "second.c",
+      "dir-search": "dir_search.c",
+      "file-stat": "file_stat.c",
+      "shm-even-odd": "reader.c",
+      "msg-queue": "client.c",
+      "fcfs-sched": "fcfs_sched.c",
+      "sjf-sched": "sjf_sched.c",
+      "rr-sched": "rr_sched.c",
+      "priority-sched": "priority_sched.c",
+      "first-fit": "first_fit.c",
+      "best-fit": "best_fit.c",
+      "worst-fit": "worst_fit.c",
+      "prod-cons": "prod_cons.c",
+      "fifo-page": "fifo_page.c",
+      "lru-page": "lru_page.c",
+      "bankers": "bankers.c"
+    },
 
-  // Gedit & Terminal Workspace Elements
-  const workspaceTabTerminal = document.getElementById("workspace-tab-terminal");
-  const workspaceTabGedit = document.getElementById("workspace-tab-gedit");
-  const viewTerminal = document.getElementById("view-terminal");
-  const viewGedit = document.getElementById("view-gedit");
-  
-  const geditFilenameTab = document.getElementById("gedit-filename-tab");
-  const geditSaveBtn = document.getElementById("gedit-save-btn");
-  const editorTextarea = document.getElementById("editor-textarea");
+    topicCrossLinks: {
+      "fork-basic": [
+        { phrase: "fork() with Loop",  target: "fork-loop" },
+        { phrase: "execv()",           target: "execv-call" }
+      ],
+      "fork-loop": [
+        { phrase: "Basic fork()",      target: "fork-basic" },
+        { phrase: "Round Robin",       target: "rr-sched" },
+        { phrase: "execv()",           target: "execv-call" }
+      ],
+      "execv-call": [
+        { phrase: "fork()",            target: "fork-basic" }
+      ],
+      "dir-search": [
+        { phrase: "File stat()",       target: "file-stat" },
+        { phrase: "stat()",            target: "file-stat" }
+      ],
+      "file-stat": [
+        { phrase: "opendir()",         target: "dir-search" },
+        { phrase: "Directory Search",  target: "dir-search" }
+      ],
+      "fcfs-sched": [
+        { phrase: "Shortest Job First", target: "sjf-sched" },
+        { phrase: "Round Robin",        target: "rr-sched" },
+        { phrase: "Priority Scheduling",target: "priority-sched" },
+        { phrase: "SJF",               target: "sjf-sched" }
+      ],
+      "sjf-sched": [
+        { phrase: "Priority Scheduling", target: "priority-sched" },
+        { phrase: "Round Robin",         target: "rr-sched" },
+        { phrase: "aging",               target: "priority-sched" },
+        { phrase: "FCFS",               target: "fcfs-sched" }
+      ],
+      "rr-sched": [
+        { phrase: "Priority",           target: "priority-sched" },
+        { phrase: "FCFS",              target: "fcfs-sched" },
+        { phrase: "SJF",               target: "sjf-sched" }
+      ],
+      "priority-sched": [
+        { phrase: "Round Robin",        target: "rr-sched" },
+        { phrase: "FCFS",              target: "fcfs-sched" },
+        { phrase: "SJF",               target: "sjf-sched" }
+      ],
+      "shm-even-odd": [
+        { phrase: "Message Queue",      target: "msg-queue" },
+        { phrase: "Producer-Consumer",  target: "prod-cons" }
+      ],
+      "msg-queue": [
+        { phrase: "Shared Memory",      target: "shm-even-odd" },
+        { phrase: "Producer-Consumer",  target: "prod-cons" }
+      ],
+      "prod-cons": [
+        { phrase: "Shared Memory",      target: "shm-even-odd" },
+        { phrase: "Message Queue",      target: "msg-queue" },
+        { phrase: "shmget",             target: "shm-even-odd" }
+      ],
+      "first-fit": [
+        { phrase: "Best Fit",           target: "best-fit" },
+        { phrase: "Worst Fit",          target: "worst-fit" }
+      ],
+      "best-fit": [
+        { phrase: "First Fit",          target: "first-fit" },
+        { phrase: "Worst Fit",          target: "worst-fit" }
+      ],
+      "worst-fit": [
+        { phrase: "First Fit",          target: "first-fit" },
+        { phrase: "Best Fit",           target: "best-fit" }
+      ],
+      "fifo-page": [
+        { phrase: "LRU",               target: "lru-page" }
+      ],
+      "lru-page": [
+        { phrase: "FIFO",              target: "fifo-page" }
+      ]
+    },
 
-  const terminalLines = document.getElementById("terminal-lines");
-  const terminalInput = document.getElementById("terminal-input");
+    syntaxCrossLinks: [
+      { token: "fork()",   cardId: "section-5-posix-system-calls-functions" },
+      { token: "execv()",  cardId: "section-5-posix-system-calls-functions" },
+      { token: "shmget()", cardId: "section-5-posix-system-calls-functions" },
+      { token: "shmat()",  cardId: "section-5-posix-system-calls-functions" },
+      { token: "stat()",   cardId: "section-5-posix-system-calls-functions" }
+    ],
 
-  // Bottom Tabs Panel
-  const tabBtnSyntax = document.getElementById("tab-btn-syntax");
-  const tabBtnShortcuts = document.getElementById("tab-btn-shortcuts");
-  const tabBtnGuide = document.getElementById("tab-btn-guide");
-  const tabContentSyntax = document.getElementById("tab-content-syntax");
-  const tabContentShortcuts = document.getElementById("tab-content-shortcuts");
-  const tabContentGuide = document.getElementById("tab-content-guide");
-  const syntaxItemsList = document.getElementById("syntax-items-list");
-  const shortcutsPanelContent = document.getElementById("shortcuts-panel-content");
-
-  // Mobile navigation
-  const mobileMenuBtn = document.getElementById("mobile-menu-btn");
-  const wsCompileBtn = document.getElementById("ws-compile-btn");
-  const wsRunBtn = document.getElementById("ws-run-btn");
-  const mobileTabDocs = document.getElementById("mobile-tab-docs");
-  const mobileTabIde = document.getElementById("mobile-tab-ide");
-  const sidebarBackdrop = document.getElementById("sidebar-backdrop");
-
-  // Sizer resize handle
-  const tcResizeHandle = document.getElementById("tc-resize-handle");
-  const themeToggleBtn = document.getElementById("theme-toggle-btn");
-
-  // --- State Variables ---
-  let activeTopicId = "fork-basic";
-  let activeWorkspaceTab = "terminal";
-  let activeHelpTab = "syntax";
-
-  // Code state tracking (saved vs current draft)
-  const savedCode = {};
-  const isCompiled = {};
-  const compiledTopicId = {};
-
-  // --- Virtual Filesystem (VFS) State ---
-  const virtualFS = {};
-  let activeFilename = "fork_basic.c"; // active file in Gedit
-  let compiledBinarySource = "";       // filename compiled to binary 'a'
-
-  const topicFilenames = {
-    "fork-basic": "fork_basic.c",
-    "fork-loop": "fork_loop.c",
-    "execv-call": "execv_call.c",
-    "dir-search": "dir_search.c",
-    "file-stat": "file_stat.c",
-    "shm-even-odd": "shm_even_odd.c",
-    "msg-queue": "msg_queue.c",
-    "fcfs-sched": "fcfs_sched.c",
-    "sjf-sched": "sjf_sched.c",
-    "rr-sched": "rr_sched.c",
-    "priority-sched": "priority_sched.c",
-    "first-fit": "first_fit.c",
-    "best-fit": "best_fit.c",
-    "worst-fit": "worst_fit.c",
-    "prod-cons": "prod_cons.c",
-    "fifo-page": "fifo_page.c",
-    "lru-page": "lru_page.c",
-    "bankers": "bankers.c"
+    relatedTopicsMap: {
+      "fork-basic":     [ { id: "fork-loop",      label: "fork() with Loop" },
+                          { id: "execv-call",     label: "execv() Call" } ],
+      "fork-loop":      [ { id: "fork-basic",     label: "Basic fork()" },
+                          { id: "rr-sched",       label: "Round Robin" } ],
+      "execv-call":     [ { id: "fork-basic",     label: "Basic fork()" } ],
+      "dir-search":     [ { id: "file-stat",      label: "File stat()" } ],
+      "file-stat":      [ { id: "dir-search",     label: "Directory Search" } ],
+      "fcfs-sched":     [ { id: "sjf-sched",      label: "SJF Scheduling" },
+                          { id: "rr-sched",       label: "Round Robin" },
+                          { id: "priority-sched", label: "Priority Scheduling" } ],
+      "sjf-sched":      [ { id: "fcfs-sched",     label: "FCFS Scheduling" },
+                          { id: "rr-sched",       label: "Round Robin" },
+                          { id: "priority-sched", label: "Priority Scheduling" } ],
+      "rr-sched":       [ { id: "fcfs-sched",     label: "FCFS Scheduling" },
+                          { id: "sjf-sched",      label: "SJF Scheduling" },
+                          { id: "priority-sched", label: "Priority Scheduling" } ],
+      "priority-sched": [ { id: "fcfs-sched",     label: "FCFS Scheduling" },
+                          { id: "sjf-sched",      label: "SJF Scheduling" },
+                          { id: "rr-sched",       label: "Round Robin" } ],
+      "shm-even-odd":   [ { id: "msg-queue",      label: "Message Queue" },
+                          { id: "prod-cons",      label: "Producer-Consumer" } ],
+      "msg-queue":      [ { id: "shm-even-odd",   label: "Shared Memory" },
+                          { id: "prod-cons",      label: "Producer-Consumer" } ],
+      "prod-cons":      [ { id: "shm-even-odd",   label: "Shared Memory" },
+                          { id: "msg-queue",      label: "Message Queue" } ],
+      "first-fit":      [ { id: "best-fit",       label: "Best Fit" },
+                          { id: "worst-fit",      label: "Worst Fit" } ],
+      "best-fit":       [ { id: "first-fit",      label: "First Fit" },
+                          { id: "worst-fit",      label: "Worst Fit" } ],
+      "worst-fit":      [ { id: "first-fit",      label: "First Fit" },
+                          { id: "best-fit",       label: "Best Fit" } ],
+      "fifo-page":      [ { id: "lru-page",       label: "LRU Page Replacement" } ],
+      "lru-page":       [ { id: "fifo-page",      label: "FIFO Page Replacement" } ]
+    }
   };
 
-  // Terminal interactive state
-  let terminalIsInteractive = false;
-  let activePromptCallback = null;
-  const commandHistory = [];
-  let historyIndex = -1;
-
-  // Initialize file states & VFS
-  topicsData.forEach(topic => {
-    savedCode[topic.id] = topic.code;
-    isCompiled[topic.id] = false;
-    const filename = getTopicFilename(topic);
-    virtualFS[filename] = topic.code;
-  });
-
-  // --- Populate UI Panels ---
-
-  // 1. Sidebar Category-based population
-  function populateSidebar() {
-    const categories = {};
-    topicsData.forEach(topic => {
-      if (!categories[topic.category]) {
-        categories[topic.category] = [];
-      }
-      categories[topic.category].push(topic);
-    });
-
-    let menuHTML = "";
-    for (const cat in categories) {
-      menuHTML += `<div class="menu-category">${cat}</div>`;
-      categories[cat].forEach(topic => {
-        menuHTML += `
-          <a class="menu-item ${topic.id === activeTopicId ? 'active' : ''}" data-id="${topic.id}">
-            ${topic.title}
-          </a>
-        `;
-      });
-    }
-    sidebarMenu.innerHTML = menuHTML;
-
-    // Attach click events
-    document.querySelectorAll(".menu-item").forEach(item => {
-      item.addEventListener("click", (e) => {
-        const topicId = e.target.getAttribute("data-id");
-        selectTopic(topicId);
-        // On mobile, close drawer on item selection
-        closeSidebarDrawer();
-      });
-    });
-  }
-
-  // 2. Syntax Tab population
-  function populateSyntaxTab() {
-    let syntaxHTML = "";
-    syntaxesData.items.forEach(item => {
-      syntaxHTML += `
-        <div class="syntax-card" id="${item.id}">
-          <h4>${item.title}</h4>
-          <div class="syntax-preview">${escapeHTML(item.syntax)}</div>
-          <div class="syntax-desc">${item.desc}</div>
-        </div>
-      `;
-    });
-    syntaxItemsList.innerHTML = syntaxHTML;
-    document.getElementById("syntax-panel-desc").innerText = syntaxesData.description;
-  }
-
-  // 3. How to Run Tab population
-  function populateShortcutsTab() {
-    let shortcutsHTML = `
-      <div class="shortcuts-section">
-        <h4>Steps to Run Code in Linux Terminal</h4>
-        <table class="shortcuts-table">
-          <thead>
-            <tr>
-              <th>Command</th>
-              <th>Action</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
+  // =========================================================================
+  // 1.5 NOTIFICATION & INPUT VALIDATION SYSTEM
+  // =========================================================================
+  function showNotification(message, type = "info") {
+    const notification = document.createElement("div");
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10000;
+      animation: slideIn 0.3s ease-out;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
     `;
     
-    shortcutsData.shortcuts.forEach(item => {
-      shortcutsHTML += `
-        <tr>
-          <td><code class="terminal-cmd-highlight">${item.key}</code></td>
-          <td><strong>${item.action}</strong></td>
-          <td>${item.desc}</td>
-        </tr>
-      `;
-    });
-
-    shortcutsHTML += `
-          </tbody>
-        </table>
-      </div>
-      <hr class="section-divider" />
-      <div class="shortcuts-section">
-        <h4>Linux GCC Environment Notes</h4>
-    `;
-
-    shortcutsData.mismatches.forEach(item => {
-      shortcutsHTML += `
-        <div class="mismatch-card">
-          <h5>${item.title}</h5>
-          <p>${item.desc}</p>
-        </div>
-      `;
-    });
-
-    shortcutsHTML += `</div>`;
-    shortcutsPanelContent.innerHTML = shortcutsHTML;
-  }
-
-  // Helper: Escape HTML characters
-  function escapeHTML(str) {
-    return str.replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;")
-              .replace(/"/g, "&quot;")
-              .replace(/'/g, "&#039;");
-  }
-
-  // --- Topic Selection ---
-  function selectTopic(topicId) {
-    activeTopicId = topicId;
-
-    // Highlight menu
-    document.querySelectorAll(".menu-item").forEach(item => {
-      if (item.getAttribute("data-id") === topicId) {
-        item.classList.add("active");
-      } else {
-        item.classList.remove("active");
-      }
-    });
-
-    const topic = topicsData.find(t => t.id === topicId);
-    if (!topic) return;
-
-    // Update Doc panel
-    docCategory.innerText = topic.category;
-    docTitle.innerText = topic.title;
-    docDesc.innerText = topic.description;
-    
-    // Assemble body sections
-    let bodyHTML = "";
-    if (topic.deconstruction) bodyHTML += topic.deconstruction;
-    if (topic.explanation) bodyHTML += topic.explanation;
-    if (topic.compatibility) bodyHTML += topic.compatibility;
-    docBody.innerHTML = bodyHTML;
-
-    // Update file card code representation
-    const filename = getTopicFilename(topic);
-    docCodeFilename.innerText = filename;
-    docCodeCode.innerText = savedCode[topicId];
-
-    // Update Gedit editor contents
-    activeFilename = filename;
-    editorTextarea.value = virtualFS[activeFilename] || "";
-    updateGeditFilenameTabState();
-  }
-
-  function getTopicFilename(topic) {
-    if (!topic) return "program.c";
-    return topicFilenames[topic.id] || (topic.title.toLowerCase().replace(/[^a-z0-9]/g, "_") + ".c");
-  }
-
-  function updateGeditFilenameTabState() {
-    const isDirty = editorTextarea.value !== (virtualFS[activeFilename] || "");
-    geditFilenameTab.innerText = (isDirty ? "*" : "") + activeFilename;
-  }
-
-  // --- Tab Swapping (Workspace & Bottom Panel) ---
-
-  function setWorkspaceTab(tab) {
-    activeWorkspaceTab = tab;
-    if (tab === "terminal") {
-      workspaceTabTerminal.classList.add("active");
-      workspaceTabGedit.classList.remove("active");
-      viewTerminal.classList.add("active");
-      viewGedit.classList.remove("active");
-      // Auto-focus terminal input
-      terminalInput.focus();
+    if (type === "error") {
+      notification.style.background = "#ef4444";
+      notification.style.color = "#fff";
+    } else if (type === "success") {
+      notification.style.background = "#10b981";
+      notification.style.color = "#fff";
     } else {
-      workspaceTabTerminal.classList.remove("active");
-      workspaceTabGedit.classList.add("active");
-      viewTerminal.classList.remove("active");
-      viewGedit.classList.add("active");
-      editorTextarea.focus();
+      notification.style.background = "#3b82f6";
+      notification.style.color = "#fff";
     }
+    
+    document.body.appendChild(notification);
+    setTimeout(() => notification.remove(), 4000);
   }
 
-  function setHelpTab(tab) {
-    activeHelpTab = tab;
-    // Reset active states
-    tabBtnSyntax.classList.remove("active");
-    tabBtnShortcuts.classList.remove("active");
-    tabBtnGuide.classList.remove("active");
-    tabContentSyntax.classList.remove("active");
-    tabContentShortcuts.classList.remove("active");
-    tabContentGuide.classList.remove("active");
-
-    if (tab === "syntax") {
-      tabBtnSyntax.classList.add("active");
-      tabContentSyntax.classList.add("active");
-    } else if (tab === "shortcuts") {
-      tabBtnShortcuts.classList.add("active");
-      tabContentShortcuts.classList.add("active");
-    } else if (tab === "guide") {
-      tabBtnGuide.classList.add("active");
-      tabContentGuide.classList.add("active");
+  function validateStdinInput(input, expectedType = "string") {
+    input = input.trim();
+    
+    if (expectedType === "int" || expectedType === "integer") {
+      if (!/^-?\d+$/.test(input)) {
+        return { valid: false, error: "Expected an integer, got: '" + input + "'" };
+      }
+      return { valid: true, value: parseInt(input) };
     }
-  }
-
-  // --- Gedit Editor Handlers ---
-
-  editorTextarea.addEventListener("input", (e) => {
-    updateGeditFilenameTabState();
-  });
-
-  geditSaveBtn.addEventListener("click", () => {
-    const code = editorTextarea.value;
-    virtualFS[activeFilename] = code;
-
-    // Check if Gedit active file matches currently selected syllabus topic
-    const activeTopic = topicsData.find(t => t.id === activeTopicId);
-    const expectedFilename = activeTopic ? getTopicFilename(activeTopic) : "";
-
-    if (activeFilename === expectedFilename && activeTopicId) {
-      savedCode[activeTopicId] = code;
-      docCodeCode.innerText = code;
-      isCompiled[activeTopicId] = false;
+    
+    if (expectedType === "float" || expectedType === "double") {
+      if (!/^-?\d*\.?\d+$/.test(input)) {
+        return { valid: false, error: "Expected a decimal number, got: '" + input + "'" };
+      }
+      return { valid: true, value: parseFloat(input) };
     }
-
-    updateGeditFilenameTabState();
-
-    // Show temporary saved indicator
-    const prevText = geditSaveBtn.innerText;
-    geditSaveBtn.innerText = "Saved!";
-    geditSaveBtn.style.backgroundColor = "#2e7d32";
-    geditSaveBtn.style.borderColor = "#388e3c";
-    geditSaveBtn.style.color = "#ffffff";
-    setTimeout(() => {
-      geditSaveBtn.innerText = prevText;
-      geditSaveBtn.style.backgroundColor = "";
-      geditSaveBtn.style.borderColor = "";
-      geditSaveBtn.style.color = "";
-    }, 1000);
-
-    writeTerminalTextLine(`[Disk] Saved file ${activeFilename}`);
-  });
-
-  // --- Terminal Command Engine ---
-
-  function writeTerminalTextLine(text) {
-    const line = document.createElement("div");
-    line.className = "terminal-line";
-    line.innerText = text;
-    terminalLines.appendChild(line);
-    // Scroll to bottom
-    terminalLines.scrollTop = terminalLines.scrollHeight;
+    
+    return { valid: true, value: input };
   }
 
-  function writeTerminalHtmlLine(html) {
-    const line = document.createElement("div");
-    line.className = "terminal-line";
-    line.innerHTML = html;
-    terminalLines.appendChild(line);
-    // Scroll to bottom
-    terminalLines.scrollTop = terminalLines.scrollHeight;
+  function detectInputTypeFromCode(code) {
+    const nextScanf = code.match(/scanf\s*\(\s*"([^"]+)"/);
+    if (!nextScanf) return "string";
+    
+    const format = nextScanf[1];
+    if (format.includes("%d") || format.includes("%i")) return "int";
+    if (format.includes("%f") || format.includes("%lf")) return "float";
+    if (format.includes("%s")) return "string";
+    
+    return "string";
   }
 
-  function clearTerminal() {
-    terminalLines.innerHTML = "";
-  }
+  // =========================================================================
+  // 2. CENTRAL STATE MANAGER
+  // =========================================================================
+  const State = {
+    activeTopicId: "fork-basic",
+    activeWorkspaceTab: "terminal",
+    workspacePanelCollapsed: false,
+    activeFilename: "fork_basic.c",
 
-  // Mock terminal interface for simulations
-  const terminalInterface = {
-    writeLine: function(text) {
-      writeTerminalTextLine(text);
+    // Virtual Filesystem (VFS)
+    virtualFS: {},
+    savedCode: {},
+    isCompiled: {},
+    compiledBinarySource: "",
+    binarySourceMap: {},
+
+    // Terminal session data
+    terminalUsername: "guest",
+    terminalHostname: "uce",
+    terminalIsInteractive: false,
+    activePromptCallback: null,
+    commandHistory: [],
+    historyIndex: -1,
+
+    getTopicFilename(topic) {
+      if (!topic) return "program.c";
+      return Config.topicFilenames[topic.id] || (topic.title.toLowerCase().replace(/[^a-z0-9]/g, "_") + ".c");
     },
-    clear: function() {
-      clearTerminal();
+
+    isSyllabusTopicFile(filename) {
+      return Object.values(Config.topicFilenames).includes(filename) || 
+             filename === "first.c" || filename === "writer.c";
     },
-    prompt: function(text, callback) {
-      writeTerminalTextLine(text);
-      terminalIsInteractive = true;
-      activePromptCallback = callback;
+
+    extractFilesFromCode(code) {
+      if (!code) return null;
+      const files = {};
+      const regex = /\/\/\s*---\s*([a-zA-Z0-9_\-\.]+)\s*---\r?\n([\s\S]*?)(?=\/\/\s*---\s*[a-zA-Z0-9_\-\.]+\s*---\r?\n|$)/g;
+      let match;
+      let found = false;
+      while ((match = regex.exec(code)) !== null) {
+        found = true;
+        State.virtualFS[match[1]] = ""; // ensure entry exists in VFS schema mapping
+        files[match[1]] = match[2].trim();
+      }
+      if (!found) return null;
+      return files;
+    },
+
+    initVFS() {
+      topicsData.forEach(topic => {
+        this.savedCode[topic.id] = topic.code;
+        this.isCompiled[topic.id] = false;
+        
+        const splitFiles = this.extractFilesFromCode(topic.code);
+        if (splitFiles) {
+          Object.entries(splitFiles).forEach(([fn, content]) => {
+            this.virtualFS[fn] = "";
+          });
+        } else {
+          const filename = this.getTopicFilename(topic);
+          this.virtualFS[filename] = "";
+        }
+      });
+      this.loadVfsFromLocalStorage();
+    },
+
+    loadVfsFromLocalStorage() {
+      try {
+        const storedVfs = JSON.parse(localStorage.getItem("vfs") || "{}");
+        Object.entries(storedVfs).forEach(([name, content]) => {
+          this.virtualFS[name] = content;
+        });
+      } catch (e) {
+        console.error("Failed to load VFS state from localStorage:", e);
+        showNotification("⚠️ Could not restore previous session", "error");
+      }
+    },
+
+    saveVfsToLocalStorage() {
+      try {
+        localStorage.setItem("vfs", JSON.stringify(this.virtualFS));
+      } catch (e) {
+        console.error("Failed to save VFS state to localStorage:", e);
+        showNotification("⚠️ Your changes may not be saved (storage quota exceeded)", "error");
+      }
     }
   };
 
-  terminalInput.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-      const val = terminalInput.value;
-      terminalInput.value = "";
-      
-      if (terminalIsInteractive) {
-        // Feed direct input to active algorithm prompt callback
-        writeTerminalTextLine(`user@uce-lab:~/os_lab$ ${val}`);
-        if (activePromptCallback) {
-          const cb = activePromptCallback;
-          // Deactivate prompt state first so callback can re-prompt if needed
-          terminalIsInteractive = false;
-          activePromptCallback = null;
-          cb(val);
-        }
-      } else {
-        // Execute normal shell command
-        executeShellCommand(val);
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (commandHistory.length > 0 && historyIndex < commandHistory.length - 1) {
-        historyIndex++;
-        terminalInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-      }
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (historyIndex > 0) {
-        historyIndex--;
-        terminalInput.value = commandHistory[commandHistory.length - 1 - historyIndex];
-      } else if (historyIndex === 0) {
-        historyIndex = -1;
-        terminalInput.value = "";
-      }
-    }
-  });
+  // --- Initialize Central VFS immediately ---
+  State.initVFS();
 
-  // --- Modularized Command Map ---
-  const commands = {
-    clear: () => {
-      clearTerminal();
+  // =========================================================================
+  // 3. DOM ELEMENT CACHE
+  // =========================================================================
+  const DOM = {
+    sidebarMenu: document.getElementById("sidebar-menu-list"),
+    docCategory: document.getElementById("doc-category"),
+    docTitle: document.getElementById("doc-title"),
+    docDesc: document.getElementById("doc-description"),
+    docBody: document.getElementById("doc-body"),
+    docCodeFilename: document.getElementById("doc-code-filename"),
+    copyBtn: document.getElementById("copy-code-btn"),
+    compatibilityAlert: document.getElementById("compatibility-alert"),
+    warningText: document.getElementById("warning-text"),
+    mobileActiveTopic: document.getElementById("mobile-active-topic"),
+    floatingCodeBtn: document.getElementById("floating-code-btn"),
+    docCodeWrapper: document.getElementById("doc-code-wrapper"),
+    docCodeContainer: document.getElementById("doc-code-container"),
+    docPanel: document.getElementById("doc-panel"),
+    
+    // Workspace tabs and views
+    workspaceTabTerminal: document.getElementById("workspace-tab-terminal"),
+    workspaceTabGedit: document.getElementById("workspace-tab-gedit"),
+    viewTerminal: document.getElementById("view-terminal"),
+    viewGedit: document.getElementById("view-gedit"),
+    geditFilenameTab: document.getElementById("gedit-filename-tab"),
+    geditSaveBtn: document.getElementById("gedit-save-btn"),
+    editorTextarea: document.getElementById("editor-textarea"),
+    
+    // Terminal elements
+    terminalLines: document.getElementById("terminal-lines"),
+    terminalInput: document.getElementById("terminal-input"),
+    terminalPromptLabel: document.getElementById("terminal-prompt-label"),
+    terminalShell: document.getElementById("terminal-shell"),
+    
+    // Triggers and panels
+    compileTriggerBtn: document.getElementById("compile-trigger-btn"),
+    workspaceToggleBtn: document.getElementById("workspace-toggle-btn"),
+    rightPanel: document.getElementById("right-panel"),
+    themeToggleBtn: document.getElementById("theme-toggle-btn"),
+    
+    // Mobile controls
+    mobileMenuBtn: document.getElementById("mobile-menu-btn"),
+    mobileTerminalToggle: document.getElementById("mobile-terminal-toggle"),
+    mobileTabDocs: document.getElementById("mobile-tab-docs"),
+    mobileTabIde: document.getElementById("mobile-tab-ide"),
+    sidebarBackdrop: document.getElementById("sidebar-backdrop")
+  };
+
+  // =========================================================================
+  // 4. UI RENDERER CONTROLLER
+  // =========================================================================
+  const UIManager = {
+    escapeHTML(str) {
+      return str.replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
     },
-    help: () => {
-      writeTerminalTextLine("Operating Systems Lab Simulator Help:");
-      writeTerminalTextLine("  gedit <filename>  - Opens the file in the Gedit editor tab");
-      writeTerminalTextLine("  gcc <file> -o a   - Compiles the file (reads saved version on disk)");
-      writeTerminalTextLine("  ./a               - Runs the compiled binary");
-      writeTerminalTextLine("  ls                - Lists files in the current workspace directory");
-      writeTerminalTextLine("  cat <file>        - Displays the content of a file");
-      writeTerminalTextLine("  rm <file>         - Removes/deletes a file from the workspace");
-      writeTerminalTextLine("  clear             - Clears the terminal screen");
-    },
-    ls: () => {
-      const files = Object.keys(virtualFS);
-      if (files.length === 0) {
-        writeTerminalTextLine("Directory is empty.");
-        return;
+
+    setupMarkedRenderer() {
+      if (window.marked) {
+        const renderer = new marked.Renderer();
+        renderer.heading = function(text, level) {
+          const slug = text.toLowerCase().replace(/[^a-z0-9_]+/g, "-").replace(/(^-|-$)/g, "");
+          if (text.includes("id=")) {
+            const idMatch = text.match(/id="([^"]+)"/);
+            const cleanText = text.replace(/<a[^>]+>.*?<\/a>/g, "").trim();
+            const idAttr = idMatch ? idMatch[1] : slug;
+            return `<h${level} id="${idAttr}">${cleanText}</h${level}>`;
+          }
+          return `<h${level} id="${slug}">${text}</h${level}>`;
+        };
+        marked.setOptions({ renderer: renderer });
       }
-      // Highlight "a" green in columns output
-      let outputHtml = "";
-      files.forEach(f => {
-        if (f === "a") {
-          outputHtml += `<span style="color: #22c55e; font-weight: bold;">a</span>&nbsp;&nbsp;&nbsp;&nbsp;`;
-        } else {
-          outputHtml += `<span>${f}</span>&nbsp;&nbsp;&nbsp;&nbsp;`;
+    },
+
+    populateSidebar() {
+      const categories = {};
+      topicsData.forEach(topic => {
+        if (!categories[topic.category]) {
+          categories[topic.category] = [];
         }
+        categories[topic.category].push(topic);
       });
-      writeTerminalHtmlLine(outputHtml);
-    },
-    cat: (args) => {
-      const filename = args[0];
-      if (!filename) {
-        writeTerminalTextLine("cat: missing file operand");
-        return;
+
+      let menuHTML = "";
+      for (const cat in categories) {
+        menuHTML += `<div class="menu-category">${cat}</div>`;
+        categories[cat].forEach(topic => {
+          menuHTML += `
+            <a href="#" class="menu-item ${topic.id === State.activeTopicId ? 'active' : ''}" data-id="${topic.id}">
+              ${topic.title}
+            </a>
+          `;
+        });
       }
-      if (virtualFS[filename] !== undefined) {
-        if (filename === "a") {
-          writeTerminalTextLine("[Binary Executable Content]");
+
+      menuHTML += `
+        <div class="menu-category">Help &amp; Reference</div>
+        <a href="#" class="menu-item ${State.activeTopicId === 'help-guide' ? 'active' : ''}" data-id="help-guide">Student Guide</a>
+        <a href="#" class="menu-item ${State.activeTopicId === 'c-syntaxes' ? 'active' : ''}" data-id="c-syntaxes">C Syntaxes</a>
+      `;
+
+      DOM.sidebarMenu.innerHTML = menuHTML;
+
+      // Attach click events to items
+      document.querySelectorAll(".menu-item").forEach(item => {
+        item.addEventListener("click", (e) => {
+          e.preventDefault();
+          const topicId = e.target.getAttribute("data-id");
+          this.selectTopic(topicId);
+          this.closeSidebarDrawer();
+        });
+      });
+    },
+
+    renderCodeLines(codeText) {
+      if (!DOM.docCodeContainer) return;
+      DOM.docCodeContainer.innerHTML = "";
+      
+      const lines = codeText.split("\n");
+      lines.forEach((line, idx) => {
+        const lineNum = idx + 1;
+        const row = document.createElement("div");
+        row.className = "code-line-row";
+        row.id = `line-L${lineNum}`;
+        
+        const numSpan = document.createElement("span");
+        numSpan.className = "code-line-number";
+        numSpan.innerText = lineNum;
+        
+        const codeSpan = document.createElement("span");
+        codeSpan.className = "code-line-text";
+        codeSpan.innerText = line;
+        
+        row.appendChild(numSpan);
+        row.appendChild(codeSpan);
+        DOM.docCodeContainer.appendChild(row);
+      });
+    },
+
+    fetchAndRenderMarkdown(topicId) {
+      const docMdContainer = document.getElementById("doc-markdown-content");
+      docMdContainer.innerHTML = `<div class="doc-loading">Loading documentation...</div>`;
+      
+      let markdownText = docsContent[topicId] || "";
+      if (markdownText) {
+        markdownText = markdownText.replace(/^#\s+.+$/m, "");
+
+        let renderedHtml = "";
+        if (window.marked && window.marked.parse) {
+          renderedHtml = window.marked.parse(markdownText);
         } else {
-          const content = virtualFS[filename];
-          content.split("\n").forEach(line => writeTerminalTextLine(line));
+          renderedHtml = `<pre style="white-space: pre-wrap;">${this.escapeHTML(markdownText)}</pre>`;
         }
-      } else {
-        writeTerminalTextLine(`cat: ${filename}: No such file or directory`);
-      }
-    },
-    rm: (args) => {
-      const filename = args[0];
-      if (!filename) {
-        writeTerminalTextLine("rm: missing operand");
-        return;
-      }
-      if (virtualFS[filename] !== undefined) {
-        delete virtualFS[filename];
-        if (filename === "a") {
-          compiledBinarySource = "";
+        
+        const tempDiv = document.createElement("div");
+        tempDiv.innerHTML = renderedHtml;
+        
+        const finalWrapper = document.createElement("div");
+        finalWrapper.className = "doc-sections-wrapper";
+
+        function cardTypeFromHeading(text) {
+          const t = text.toLowerCase();
+          if (t.includes("what is") || t.startsWith("what")) return "card-what";
+          if (t.includes("where") || t.includes("fit")) return "card-where";
+          if (t.includes("algorithm") || t.includes("how does") || t.includes("plain steps")) return "card-how";
+          if (t.includes("why c") || t.includes("why does c") || t.includes("different")) return "card-why";
+          if (t.includes("implementation") || t.includes("compile") || t.includes("guide")) return "card-impl";
+          if (t.includes("reference") || t.includes("documentation") || t.includes("official")) return "card-ref";
+          return "card-default";
         }
-        writeTerminalTextLine(`Removed file ${filename}`);
-      } else {
-        writeTerminalTextLine(`rm: cannot remove '${filename}': No such file or directory`);
-      }
-    },
-    gedit: (args) => {
-      const filename = args[0];
-      if (!filename) {
-        writeTerminalTextLine("gedit: missing file operand");
-        return;
-      }
-      
-      // Create new file if it doesn't exist in VFS
-      if (virtualFS[filename] === undefined) {
-        virtualFS[filename] = "";
-      }
-      
-      activeFilename = filename;
-      
-      // Match against existing syllabus topic
-      const matchingTopic = topicsData.find(t => getTopicFilename(t) === filename);
-      if (matchingTopic) {
-        activeTopicId = matchingTopic.id;
-        document.querySelectorAll(".menu-item").forEach(item => {
-          if (item.getAttribute("data-id") === activeTopicId) {
-            item.classList.add("active");
+        
+        let currentCard = null;
+        Array.from(tempDiv.children).forEach(child => {
+          if (child.tagName === 'H2' || child.tagName === 'H1') {
+            currentCard = document.createElement("div");
+            const typeClass = cardTypeFromHeading(child.textContent || "");
+            currentCard.className = `doc-section-card ${typeClass}`;
+            if (child.id) currentCard.id = `section-${child.id}`;
+            finalWrapper.appendChild(currentCard);
+          }
+          if (currentCard) {
+            currentCard.appendChild(child);
           } else {
-            item.classList.remove("active");
+            const introCard = document.createElement("div");
+            introCard.className = "doc-section-card card-what";
+            introCard.appendChild(child);
+            finalWrapper.appendChild(introCard);
+            currentCard = introCard;
           }
         });
-      } else {
-        activeTopicId = null;
-        document.querySelectorAll(".menu-item").forEach(item => item.classList.remove("active"));
-      }
-      
-      // Load editor content
-      editorTextarea.value = virtualFS[activeFilename] || "";
-      updateGeditFilenameTabState();
-      setWorkspaceTab("gedit");
-      writeTerminalTextLine(`Opened Gedit editor tab for ${filename}`);
-    },
-    gcc: (args) => {
-      const fileArg = args[0] || "";
-      const hasOutFlag = args.includes("-o");
-      const outVal = args[args.indexOf("-o") + 1] || "";
 
-      if (!fileArg) {
-        writeTerminalTextLine("gcc: fatal error: no input files");
-        return;
-      }
+        // Inject cross-topic links
+        const links = Config.topicCrossLinks[topicId] || [];
+        if (links.length > 0) {
+          const walker = document.createTreeWalker(
+            finalWrapper,
+            NodeFilter.SHOW_TEXT,
+            {
+              acceptNode(node) {
+                let p = node.parentElement;
+                while (p && p !== finalWrapper) {
+                  const tag = p.tagName.toUpperCase();
+                  if (tag === 'CODE' || tag === 'PRE' || tag === 'A') return NodeFilter.FILTER_REJECT;
+                  p = p.parentElement;
+                }
+                return NodeFilter.FILTER_ACCEPT;
+              }
+            }
+          );
 
-      if (virtualFS[fileArg] === undefined) {
-        writeTerminalTextLine(`gcc: error: ${fileArg}: No such file or directory`);
-        return;
-      }
+          const textNodes = [];
+          let n;
+          while ((n = walker.nextNode())) textNodes.push(n);
 
-      if (!hasOutFlag || outVal !== "a") {
-        writeTerminalTextLine("gcc: error: compilation requires output flag '-o a'");
-        return;
-      }
+          const sortedLinks = [...links].sort((a, b) => b.phrase.length - a.phrase.length);
+          const escapedPhrases = sortedLinks.map(l =>
+            l.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+          );
+          const re = new RegExp(`(${escapedPhrases.join('|')})`, 'g');
 
-      writeTerminalTextLine(`compiling ${fileArg}...`);
-      
-      // Check for unsaved changes in current active Gedit view
-      const isDirty = (activeFilename === fileArg) && (editorTextarea.value !== (virtualFS[activeFilename] || ""));
-      if (isDirty) {
-        writeTerminalHtmlLine(`<span style="color: #fbbf24;">warning: You have unsaved changes in Gedit. Compiling previously saved version!</span>`);
-      }
+          textNodes.forEach(textNode => {
+            const orig = textNode.nodeValue;
+            if (!re.test(orig)) return;
+            re.lastIndex = 0;
 
-      setTimeout(() => {
-        const fileContent = virtualFS[fileArg];
-        // If it's a syllabus topic, compile using its ID. Else compile sandbox template.
-        const matchingTopic = topicsData.find(t => getTopicFilename(t) === fileArg);
-        const compileId = matchingTopic ? matchingTopic.id : "sandbox";
-
-        const result = compiler.compile(compileId, fileContent);
-        
-        if (result.success) {
-          result.warnings.forEach(w => {
-            writeTerminalHtmlLine(`<span style="color: #fbbf24;">${fileArg}:${w.line}: warning: ${w.msg}</span>`);
+            const frag = document.createDocumentFragment();
+            let lastIdx = 0;
+            let m;
+            re.lastIndex = 0;
+            while ((m = re.exec(orig)) !== null) {
+              if (m.index > lastIdx) {
+                frag.appendChild(document.createTextNode(orig.slice(lastIdx, m.index)));
+              }
+              const matchedPhrase = m[0];
+              const linkDef = sortedLinks.find(l => l.phrase === matchedPhrase);
+              if (linkDef) {
+                const a = document.createElement("a");
+                a.className = "doc-crosslink";
+                a.textContent = matchedPhrase;
+                a.dataset.topicTarget = linkDef.target;
+                a.title = `Go to: ${linkDef.target.replace(/-/g, ' ')}`;
+                frag.appendChild(a);
+              } else {
+                frag.appendChild(document.createTextNode(matchedPhrase));
+              }
+              lastIdx = m.index + m[0].length;
+            }
+            if (lastIdx < orig.length) {
+              frag.appendChild(document.createTextNode(orig.slice(lastIdx)));
+            }
+            textNode.parentNode.replaceChild(frag, textNode);
           });
-          compiledBinarySource = fileArg;
-          virtualFS["a"] = "[Binary Executable]";
-          writeTerminalHtmlLine(`<span style="color: #34d399; font-weight: bold;">Compilation successful. Output written to 'a'</span>`);
-        } else {
-          result.errors.forEach(err => {
-            writeTerminalHtmlLine(`<span style="color: #f87171;">${fileArg}:${err.line}: ${err.msg}</span>`);
-          });
-          if (virtualFS["a"]) {
-            delete virtualFS["a"];
-            compiledBinarySource = "";
-          }
         }
-      }, 500);
+
+        // Inject syntax cross-links
+        finalWrapper.querySelectorAll("code").forEach(codeEl => {
+          if (codeEl.closest("pre")) return;
+          const text = codeEl.textContent.trim();
+          const match = Config.syntaxCrossLinks.find(s => text === s.token);
+          if (match) {
+            const a = document.createElement("a");
+            a.className = "syntax-crosslink";
+            a.textContent = text;
+            a.dataset.syntaxCard = match.cardId;
+            a.title = `View syntax: ${text}`;
+            codeEl.parentNode.replaceChild(a, codeEl);
+          }
+        });
+
+        // Append Related Topics Bar to bottom of doc-body
+        const related = Config.relatedTopicsMap[topicId];
+        if (related && related.length > 0) {
+          const bar = document.createElement("div");
+          bar.className = "related-topics-bar";
+          const label = document.createElement("span");
+          label.className = "related-topics-label";
+          label.textContent = "See also";
+          bar.appendChild(label);
+
+          related.forEach(rel => {
+            const chip = document.createElement("button");
+            chip.className = "topic-chip";
+            chip.textContent = rel.label;
+            chip.dataset.topicTarget = rel.id;
+            chip.title = `Navigate to ${rel.label}`;
+            bar.appendChild(chip);
+          });
+          finalWrapper.appendChild(bar);
+        }
+        
+        docMdContainer.innerHTML = "";
+        docMdContainer.appendChild(finalWrapper);
+      } else {
+        const matchingTopic = topicsData.find(t => t.id === topicId);
+        if (matchingTopic) {
+          docMdContainer.innerHTML = `
+            <div class="doc-section-card">
+              <h2>Overview</h2>
+              <p>${this.escapeHTML(matchingTopic.description)}</p>
+            </div>
+          `;
+        } else {
+          docMdContainer.innerHTML = `<div class="doc-loading">No documentation content found.</div>`;
+        }
+      }
+    },
+
+    selectTopic(topicId, restoreScrollTop) {
+      State.activeTopicId = topicId;
+
+      document.querySelectorAll(".menu-item").forEach(item => {
+        if (item.getAttribute("data-id") === topicId) {
+          item.classList.add("active");
+        } else {
+          item.classList.remove("active");
+        }
+      });
+
+      const isHelpFile = (topicId === "help-guide" || topicId === "c-syntaxes");
+
+      if (isHelpFile) {
+        DOM.docCategory.innerText = "Reference";
+        DOM.docTitle.innerText = (topicId === "help-guide") ? "Student Guide" : "C Syntaxes";
+        DOM.docDesc.innerText = (topicId === "help-guide") ? "Platform usage instructions." : "C Language loops, structs, and pointers.";
+        
+        if (DOM.mobileActiveTopic) {
+          DOM.mobileActiveTopic.innerText = (topicId === "help-guide") ? "Student Guide" : "C Syntaxes";
+        }
+
+        this.fetchAndRenderMarkdown(topicId);
+        DOM.docCodeWrapper.style.display = "none";
+        DOM.floatingCodeBtn.style.display = "none";
+      } else {
+        const topic = topicsData.find(t => t.id === topicId);
+        if (!topic) return;
+
+        DOM.docCategory.innerText = topic.category;
+        DOM.docTitle.innerText = topic.title;
+        DOM.docDesc.innerText = topic.description;
+
+        if (DOM.mobileActiveTopic) {
+          DOM.mobileActiveTopic.innerText = topic.title;
+        }
+
+        this.fetchAndRenderMarkdown(topicId);
+        DOM.docCodeWrapper.style.display = "block";
+        DOM.floatingCodeBtn.style.display = "flex";
+
+        const filename = State.getTopicFilename(topic);
+        DOM.docCodeFilename.innerText = filename;
+        this.renderCodeLines(State.savedCode[topicId]);
+
+        State.activeFilename = filename;
+        const currentEditorFile = DOM.geditFilenameTab.textContent.replace(/^\*/, "");
+        if (currentEditorFile !== State.activeFilename) {
+          DOM.editorTextarea.value = State.virtualFS[State.activeFilename] || "";
+        }
+        Editor.updateGeditFilenameTabState();
+      }
+
+      if (typeof restoreScrollTop === "number") {
+        setTimeout(() => { DOM.docPanel.scrollTop = restoreScrollTop; }, 60);
+      } else {
+        DOM.docPanel.scrollTop = 0;
+      }
+    },
+
+    highlightSyntaxCard(cardId) {
+      this.selectTopic("c-syntaxes");
+      this.closeSidebarDrawer();
+      setTimeout(() => {
+        const card = document.getElementById(cardId);
+        if (card) {
+          const containerTop = DOM.docPanel.getBoundingClientRect().top;
+          const cardTop = card.getBoundingClientRect().top;
+          const relativeTop = cardTop - containerTop + DOM.docPanel.scrollTop;
+          DOM.docPanel.scrollTo({ top: relativeTop - 40, behavior: "smooth" });
+          card.classList.add("highlight");
+          setTimeout(() => card.classList.remove("highlight"), 1800);
+        }
+      }, 120);
+    },
+
+    // Sidebar drawers
+    openSidebarDrawer() {
+      document.querySelector(".sidebar").classList.add("open");
+      DOM.sidebarBackdrop.classList.add("active");
+    },
+
+    closeSidebarDrawer() {
+      document.querySelector(".sidebar").classList.remove("open");
+      DOM.sidebarBackdrop.classList.remove("active");
+    },
+
+    // Workspace panels
+    openWorkspacePanel() {
+      State.workspacePanelCollapsed = false;
+      DOM.rightPanel.classList.remove("collapsed");
+      DOM.workspaceToggleBtn.classList.add("active-panel");
+      localStorage.setItem("workspace_collapsed", "false");
+    },
+
+    closeWorkspacePanel() {
+      State.workspacePanelCollapsed = true;
+      DOM.rightPanel.classList.add("collapsed");
+      DOM.workspaceToggleBtn.classList.remove("active-panel");
+      localStorage.setItem("workspace_collapsed", "true");
+    },
+
+    toggleWorkspacePanel() {
+      if (State.workspacePanelCollapsed) {
+        this.openWorkspacePanel();
+      } else {
+        this.closeWorkspacePanel();
+      }
+    },
+
+    setWorkspaceTab(tab) {
+      State.activeWorkspaceTab = tab;
+      if (window.innerWidth > 768 && State.workspacePanelCollapsed) {
+        this.openWorkspacePanel();
+      }
+
+      if (tab === "terminal") {
+        DOM.workspaceTabTerminal.classList.add("active");
+        DOM.workspaceTabGedit.classList.remove("active");
+        DOM.viewTerminal.classList.add("active");
+        DOM.viewGedit.classList.remove("active");
+        setTimeout(() => DOM.terminalInput.focus(), 60);
+      } else {
+        if (DOM.workspaceTabGedit) {
+          DOM.workspaceTabGedit.style.display = "inline-block";
+        }
+        DOM.workspaceTabTerminal.classList.remove("active");
+        DOM.workspaceTabGedit.classList.add("active");
+        DOM.viewTerminal.classList.remove("active");
+        DOM.viewGedit.classList.add("active");
+        setTimeout(() => DOM.editorTextarea.focus(), 60);
+      }
+    },
+
+    setMobileTab(tab) {
+      const contentArea = document.querySelector(".content-area");
+      if (tab === "docs") {
+        DOM.mobileTabDocs.classList.add("active");
+        DOM.mobileTabIde.classList.remove("active");
+        contentArea.classList.add("view-docs");
+        contentArea.classList.remove("view-ide");
+      } else {
+        DOM.mobileTabDocs.classList.remove("active");
+        DOM.mobileTabIde.classList.add("active");
+        contentArea.classList.add("view-ide");
+        contentArea.classList.remove("view-docs");
+        
+        if (State.activeWorkspaceTab === "terminal") {
+          DOM.terminalInput.focus();
+        } else {
+          DOM.editorTextarea.focus();
+        }
+      }
     }
   };
 
-  // --- Executive Command Dispatcher ---
-  function executeShellCommand(cmdString) {
-    const rawCmd = cmdString.trim();
-    if (rawCmd) {
-      commandHistory.push(rawCmd);
-    }
-    historyIndex = -1;
+  // =========================================================================
+  // 5. EDITOR CONTROLLER
+  // =========================================================================
+  const Editor = {
+    updateGeditFilenameTabState() {
+      const isDirty = DOM.editorTextarea.value !== (State.virtualFS[State.activeFilename] || "");
+      DOM.geditFilenameTab.innerText = (isDirty ? "*" : "") + State.activeFilename;
+    },
 
-    // Write command prefix to log
-    writeTerminalTextLine(`user@uce-lab:~/os_lab$ ${rawCmd}`);
+    saveFile() {
+      const code = DOM.editorTextarea.value;
+      State.virtualFS[State.activeFilename] = code;
 
-    if (!rawCmd) return;
+      const activeTopic = topicsData.find(t => {
+        if (State.getTopicFilename(t) === State.activeFilename) return true;
+        const splitFiles = State.extractFilesFromCode(t.code);
+        return splitFiles && Object.keys(splitFiles).includes(State.activeFilename);
+      });
 
-    // Check if running executable ./a
-    if (rawCmd === "./a") {
-      if (virtualFS["a"] === undefined || !compiledBinarySource) {
-        writeTerminalTextLine("bash: ./a: No such file or directory (did you compile it?)");
-        return;
+      if (activeTopic) {
+        if (DOM.docCodeFilename.innerText === State.activeFilename) {
+          UIManager.renderCodeLines(code);
+        }
+        State.isCompiled[activeTopic.id] = false;
       }
-      
-      // Execute compiled binary simulation
-      terminalIsInteractive = true;
-      writeTerminalTextLine(`Executing binary image ./a (compiled from ${compiledBinarySource})...`);
-      
-      const matchingTopic = topicsData.find(t => getTopicFilename(t) === compiledBinarySource);
-      const compileId = matchingTopic ? matchingTopic.id : "sandbox";
-      const codeToRun = virtualFS[compiledBinarySource];
-      
+
+      this.updateGeditFilenameTabState();
+      State.saveVfsToLocalStorage();
+
+      // Show saved indicator on button
+      const prevText = DOM.geditSaveBtn.innerText;
+      DOM.geditSaveBtn.innerText = "Saved!";
+      DOM.geditSaveBtn.style.backgroundColor = "var(--accent-bg)";
+      DOM.geditSaveBtn.style.borderColor = "var(--accent)";
+      DOM.geditSaveBtn.style.color = "var(--accent)";
       setTimeout(() => {
-        compiler.runSimulation(compileId, codeToRun, {
-          writeLine: (text) => writeTerminalTextLine(text),
-          prompt: (lbl, cb) => {
-            writeTerminalTextLine(lbl);
-            activePromptCallback = cb;
+        DOM.geditSaveBtn.innerText = prevText;
+        DOM.geditSaveBtn.style.backgroundColor = "";
+        DOM.geditSaveBtn.style.borderColor = "";
+        DOM.geditSaveBtn.style.color = "";
+      }, 1000);
+
+      Terminal.writeTerminalTextLine(`[Disk] Saved file ${State.activeFilename}`);
+    }
+  };
+
+  // =========================================================================
+  // 6. TERMINAL & SIMULATION ENGINE
+  // =========================================================================
+  const Terminal = {
+    writeTerminalTextLine(text) {
+      const line = document.createElement("div");
+      line.className = "terminal-line";
+      line.innerText = text;
+      DOM.terminalLines.appendChild(line);
+      DOM.terminalShell.scrollTop = DOM.terminalShell.scrollHeight;
+    },
+
+    writeTerminalHtmlLine(html) {
+      const line = document.createElement("div");
+      line.className = "terminal-line";
+      line.innerHTML = html;
+      DOM.terminalLines.appendChild(line);
+      DOM.terminalShell.scrollTop = DOM.terminalShell.scrollHeight;
+    },
+
+    clearTerminal() {
+      DOM.terminalLines.innerHTML = "";
+    },
+
+    updatePromptLabel() {
+      if (DOM.terminalPromptLabel) {
+        DOM.terminalPromptLabel.innerHTML = `<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;`;
+      }
+    },
+
+    simulateTypingAndEnter(commandText, callback) {
+      let index = 0;
+      DOM.terminalInput.value = "";
+      DOM.terminalInput.disabled = true;
+      
+      const typeNextChar = () => {
+        if (index < commandText.length) {
+          DOM.terminalInput.value += commandText.charAt(index);
+          index++;
+          DOM.terminalInput.focus();
+          DOM.terminalShell.scrollTop = DOM.terminalShell.scrollHeight;
+          setTimeout(typeNextChar, 18 + Math.random() * 12);
+        } else {
+          DOM.terminalInput.disabled = false;
+          const val = DOM.terminalInput.value;
+          DOM.terminalInput.value = "";
+          
+          if (State.terminalIsInteractive) {
+            this.writeTerminalHtmlLine(`<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;${UIManager.escapeHTML(val)}`);
+            if (State.activePromptCallback) {
+              const cb = State.activePromptCallback;
+              State.terminalIsInteractive = false;
+              State.activePromptCallback = null;
+              cb(val);
+            }
+          } else {
+            this.executeShellCommand(val);
           }
-        }, () => {
-          terminalIsInteractive = false;
-          activePromptCallback = null;
-          writeTerminalTextLine("Process exited with code 0.");
-          writeTerminalTextLine("");
+          
+          if (callback) {
+            setTimeout(callback, 200);
+          }
+        }
+      };
+      typeNextChar();
+    },
+
+    // Command Actions Map
+    commands: {
+      clear: () => {
+        Terminal.clearTerminal();
+      },
+      cd: (args) => {
+        const target = args[0];
+        if (!target || target === "~" || target === "/" || target === ".." || target === ".") {
+          Terminal.writeTerminalTextLine("Already in the main workspace directory (~/os_lab). No need to navigate elsewhere.");
+        } else {
+          Terminal.writeTerminalTextLine(`cd: ${target}: access denied. The OS lab environment isolates all files in the active ~/os_lab workspace.`);
+        }
+      },
+      help: () => {
+        Terminal.writeTerminalTextLine("os-uce Terminal Help Commands:");
+        Terminal.writeTerminalTextLine("  gedit <filename>  - Open/create a C source file in Gedit editor");
+        Terminal.writeTerminalTextLine("  gcc <file> -o a   - Compile a file (GCC reads saved code from virtual disk)");
+        Terminal.writeTerminalTextLine("  ./a               - Run the compiled simulator binary");
+        Terminal.writeTerminalTextLine("  ls                - List files (source files grey, binaries in green)");
+        Terminal.writeTerminalTextLine("  cat <file>        - Print the contents of a file directly to the console");
+        Terminal.writeTerminalTextLine("  rm <file>         - Delete a file from the filesystem");
+        Terminal.writeTerminalTextLine("  cd [dir]          - Check workspace directory status");
+        Terminal.writeTerminalTextLine("  name <new_name>   - Change username in the prompt");
+        Terminal.writeTerminalTextLine("  clear             - Clear the screen logs");
+      },
+      name: (args) => {
+        const newName = args[0];
+        if (!newName) {
+          Terminal.writeTerminalTextLine("usage: name <new_username>");
+          return;
+        }
+        State.terminalUsername = newName;
+        Terminal.updatePromptLabel();
+        Terminal.writeTerminalTextLine(`Prompt updated. Welcome, ${newName}!`);
+      },
+      ls: () => {
+        const files = Object.keys(State.virtualFS);
+        if (files.length === 0) {
+          Terminal.writeTerminalTextLine("Directory is empty.");
+          return;
+        }
+        let outputHtml = "";
+        files.forEach(f => {
+          if (f === "a") {
+            outputHtml += `<span style="color: var(--accent); font-weight: bold;">a</span>&nbsp;&nbsp;&nbsp;&nbsp;`;
+          } else {
+            outputHtml += `<span>${f}</span>&nbsp;&nbsp;&nbsp;&nbsp;`;
+          }
         });
-      }, 400);
-      return;
-    }
-
-    const parts = rawCmd.split(/\s+/);
-    const command = parts[0].toLowerCase();
-    const args = parts.slice(1);
-
-    if (commands[command]) {
-      commands[command](args);
-    } else {
-      writeTerminalTextLine(`bash: ${command}: command not found. Type 'help' to review commands.`);
-    }
-  }
-
-  // --- Automated Run button handler (for teaching commands) ---
-  
-  function triggerAutoRunSequence() {
-    setWorkspaceTab("terminal");
-    const topic = topicsData.find(t => t.id === activeTopicId);
-    if (!topic) return;
-    const filename = getTopicFilename(topic);
-
-    writeTerminalTextLine("\n[Auto-Run Helper Triggered]");
-    
-    // Simulate typing gedit -> gcc -> ./a sequentially
-    setTimeout(() => {
-      executeShellCommand(`gedit ${filename}`);
-      
-      setTimeout(() => {
-        setWorkspaceTab("terminal");
-        // Save automatically if they click Run
-        virtualFS[filename] = editorTextarea.value;
-        savedCode[activeTopicId] = editorTextarea.value;
-        docCodeCode.innerText = editorTextarea.value;
-        updateGeditFilenameTabState();
+        Terminal.writeTerminalHtmlLine(outputHtml);
+      },
+      cat: (args) => {
+        const filename = args[0];
+        if (!filename) {
+          Terminal.writeTerminalTextLine("cat: missing file operand");
+          return;
+        }
+        if (State.virtualFS[filename] !== undefined) {
+          if (filename === "a") {
+            Terminal.writeTerminalTextLine("[Binary Executable Content]");
+          } else {
+            const content = State.virtualFS[filename];
+            content.split("\n").forEach(line => Terminal.writeTerminalTextLine(line));
+          }
+        } else {
+          Terminal.writeTerminalTextLine(`cat: ${filename}: No such file or directory`);
+        }
+      },
+      rm: (args) => {
+        const filename = args[0];
+        if (!filename) {
+          Terminal.writeTerminalTextLine("rm: missing operand");
+          return;
+        }
+        if (State.virtualFS[filename] !== undefined) {
+          delete State.virtualFS[filename];
+          if (filename === "a") {
+            State.compiledBinarySource = "";
+          }
+          Terminal.writeTerminalTextLine(`Removed file ${filename}`);
+          State.saveVfsToLocalStorage();
+        } else {
+          Terminal.writeTerminalTextLine(`rm: cannot remove '${filename}': No such file or directory`);
+        }
+      },
+      gedit: (args) => {
+        const filename = args[0];
+        if (!filename) {
+          Terminal.writeTerminalTextLine("gedit: missing file operand");
+          return;
+        }
         
-        executeShellCommand(`gcc ${filename} -o a`);
+        if (State.virtualFS[filename] === undefined) {
+          State.virtualFS[filename] = "";
+          State.saveVfsToLocalStorage();
+        }
+        
+        State.activeFilename = filename;
+        
+        const matchingTopic = topicsData.find(t => State.getTopicFilename(t) === filename);
+        if (matchingTopic) {
+          State.activeTopicId = matchingTopic.id;
+          document.querySelectorAll(".menu-item").forEach(item => {
+            if (item.getAttribute("data-id") === State.activeTopicId) {
+              item.classList.add("active");
+            } else {
+              item.classList.remove("active");
+            }
+          });
+        } else {
+          State.activeTopicId = null;
+          document.querySelectorAll(".menu-item").forEach(item => item.classList.remove("active"));
+        }
+        
+        DOM.editorTextarea.value = State.virtualFS[State.activeFilename] || "";
+        Editor.updateGeditFilenameTabState();
+        if (DOM.workspaceTabGedit) {
+          DOM.workspaceTabGedit.style.display = "inline-block";
+        }
+        UIManager.setWorkspaceTab("gedit");
+        if (window.innerWidth <= 768) UIManager.setMobileTab("ide");
+        Terminal.writeTerminalTextLine(`Opened ${filename} in editor.`);
+      },
+      gcc: (args) => {
+        const fileArg = args[0] || "";
+        const hasOutFlag = args.includes("-o");
+        const outVal = hasOutFlag ? args[args.indexOf("-o") + 1] : "";
+
+        if (!fileArg) {
+          Terminal.writeTerminalTextLine("gcc: fatal error: no input files");
+          return;
+        }
+
+        if (State.virtualFS[fileArg] === undefined) {
+          Terminal.writeTerminalTextLine(`gcc: error: ${fileArg}: No such file or directory`);
+          return;
+        }
+
+        if (!hasOutFlag || !outVal) {
+          Terminal.writeTerminalTextLine("gcc: error: compilation requires output flag '-o <binary>'");
+          return;
+        }
+
+        Terminal.writeTerminalTextLine(`compiling ${fileArg}...`);
+        
+        const isDirty = (State.activeFilename === fileArg) && (DOM.editorTextarea.value !== (State.virtualFS[State.activeFilename] || ""));
+        if (isDirty) {
+          Terminal.writeTerminalHtmlLine(`<span style="color: var(--warn-text);">warning: You have unsaved changes in Gedit. Compiling previously saved version!</span>`);
+        }
+
+        setTimeout(() => {
+          const fileContent = State.virtualFS[fileArg];
+          const matchingTopic = topicsData.find(t => State.getTopicFilename(t) === fileArg);
+          const compileId = matchingTopic ? matchingTopic.id : "sandbox";
+
+          const result = compiler.compile(compileId, fileContent);
+          
+          if (result.success) {
+            result.warnings.forEach(w => {
+              Terminal.writeTerminalHtmlLine(`<span style="color: var(--warn-text);">${fileArg}:${w.line}: warning: ${w.msg}</span>`);
+            });
+            State.compiledBinarySource = fileArg;
+            State.binarySourceMap[outVal] = fileArg;
+            State.virtualFS[outVal] = "[Binary Executable]";
+            Terminal.writeTerminalHtmlLine(`<span style="color: var(--accent); font-weight: bold;">Compilation successful. Output written to '${outVal}'</span>`);
+          } else {
+            result.errors.forEach(err => {
+              Terminal.writeTerminalHtmlLine(`<span style="color: var(--danger);">${fileArg}:${err.line}: ${err.msg}</span>`);
+            });
+            if (State.virtualFS[outVal]) {
+              delete State.virtualFS[outVal];
+              delete State.binarySourceMap[outVal];
+              State.compiledBinarySource = "";
+            }
+          }
+
+          if (result.smartReports && result.smartReports.length > 0) {
+            Terminal.writeTerminalHtmlLine(`<div class="smart-compiler-report"><strong>Smart Static Analyzer:</strong>`);
+            result.smartReports.forEach(r => {
+              const linePrefix = r.line ? `[Line ${r.line}] ` : "";
+              Terminal.writeTerminalHtmlLine(`<div style="margin-top:2px;">&nbsp;&nbsp;* ${linePrefix}${UIManager.escapeHTML(r.msg)}</div>`);
+              if (r.hint) {
+                Terminal.writeTerminalHtmlLine(`<div style="margin-top:2px; margin-left:20px; color: #fbbf24;">💡 Hint: ${UIManager.escapeHTML(r.hint)}</div>`);
+              }
+            });
+            Terminal.writeTerminalHtmlLine(`</div>`);
+          }
+        }, 500);
+      }
+    },
+
+    executeShellCommand(cmdString) {
+      const rawCmd = cmdString.trim();
+      if (rawCmd) {
+        State.commandHistory.push(rawCmd);
+      }
+      State.historyIndex = -1;
+
+      this.writeTerminalHtmlLine(`<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;${UIManager.escapeHTML(rawCmd)}`);
+
+      if (!rawCmd) return;
+
+      if (rawCmd.startsWith("./")) {
+        const binaryName = rawCmd.substring(2).trim();
+        if (State.virtualFS[binaryName] === undefined) {
+          this.writeTerminalTextLine(`bash: ./${binaryName}: No such file or directory (did you compile it?)`);
+          return;
+        }
+        
+        const srcFile = State.binarySourceMap[binaryName] || State.compiledBinarySource || "sandbox.c";
+        State.terminalIsInteractive = true;
+        this.writeTerminalTextLine(`Executing binary image ./${binaryName} (compiled from ${srcFile})...`);
+        
+        const matchingTopic = topicsData.find(t => State.getTopicFilename(t) === srcFile);
+        const compileId = matchingTopic ? matchingTopic.id : "sandbox";
+        const codeToRun = State.virtualFS[srcFile] || "";
         
         setTimeout(() => {
-          executeShellCommand("./a");
-        }, 800);
-      }, 1000);
-    }, 400);
-  }
+          compiler.runSimulation(compileId, codeToRun, {
+            writeLine: (text) => this.writeTerminalTextLine(text),
+            prompt: (lbl, cb) => {
+              this.writeTerminalTextLine(lbl);
+              State.activePromptCallback = cb;
+              State.terminalIsInteractive = true;
+            }
+          }, () => {
+            State.terminalIsInteractive = false;
+            State.activePromptCallback = null;
+            this.writeTerminalTextLine("Process exited with code 0.");
+            this.writeTerminalTextLine("");
+          });
+        }, 400);
+        return;
+      }
 
-  // --- Interactive Drag Resizer Handle ---
-  let isDragging = false;
+      const parts = [];
+      const argRegex = /[^\s"']+|"([^"]*)"|'([^']*)'/g;
+      let match;
+      while ((match = argRegex.exec(rawCmd)) !== null) {
+        parts.push(match[1] !== undefined ? match[1] : (match[2] !== undefined ? match[2] : match[0]));
+      }
+      
+      if (parts.length === 0) return;
+      const command = parts[0].toLowerCase();
+      const args = parts.slice(1);
 
-  function initResize(e) {
-    isDragging = true;
-    document.body.style.cursor = "ns-resize";
-    document.body.style.userSelect = "none";
-  }
-
-  function handleResize(e) {
-    if (!isDragging) return;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const rightPanel = document.querySelector(".right-panel");
-    const rect = rightPanel.getBoundingClientRect();
-    
-    // Calculate new height for upper workspace panel
-    const newWorkspaceHeight = clientY - rect.top;
-    const minHeight = 90;
-    const maxHeight = rect.height - 80;
-    
-    if (newWorkspaceHeight >= minHeight && newWorkspaceHeight <= maxHeight) {
-      document.querySelector(".workspace-panel").style.height = `${newWorkspaceHeight}px`;
-    }
-  }
-
-  function endResize() {
-    if (!isDragging) return;
-    isDragging = false;
-    document.body.style.cursor = "";
-    document.body.style.userSelect = "";
-  }
-
-  // Resizer Event Listeners
-  tcResizeHandle.addEventListener("mousedown", initResize);
-  document.addEventListener("mousemove", handleResize);
-  document.addEventListener("mouseup", endResize);
-
-  // Touch support for mobile resizing
-  tcResizeHandle.addEventListener("touchstart", (e) => {
-    initResize(e);
-  });
-  document.addEventListener("touchmove", (e) => {
-    handleResize(e);
-  });
-  document.addEventListener("touchend", endResize);
-
-  // --- Click Listeners for Sidebar & Headers ---
-  
-  copyBtn.addEventListener("click", () => {
-    navigator.clipboard.writeText(virtualFS[activeFilename] || "").then(() => {
-      const prev = copyBtn.innerText;
-      copyBtn.innerText = "Copied!";
-      setTimeout(() => {
-        copyBtn.innerText = prev;
-      }, 1200);
-    });
-  });
-
-  workspaceTabTerminal.addEventListener("click", () => setWorkspaceTab("terminal"));
-  workspaceTabGedit.addEventListener("click", () => setWorkspaceTab("gedit"));
-
-  tabBtnSyntax.addEventListener("click", () => setHelpTab("syntax"));
-  tabBtnShortcuts.addEventListener("click", () => setHelpTab("shortcuts"));
-  tabBtnGuide.addEventListener("click", () => setHelpTab("guide"));
-
-  // Mobile Top Menu / Backdrop Drawer Actions
-  mobileMenuBtn.addEventListener("click", openSidebarDrawer);
-  sidebarBackdrop.addEventListener("click", closeSidebarDrawer);
-
-  function openSidebarDrawer() {
-    document.querySelector(".sidebar").classList.add("open");
-    sidebarBackdrop.classList.add("active");
-  }
-
-  function closeSidebarDrawer() {
-    document.querySelector(".sidebar").classList.remove("open");
-    sidebarBackdrop.classList.remove("active");
-  }
-
-  // Workspace Action Buttons (Compile and Run)
-  wsCompileBtn.addEventListener("click", () => {
-    setMobileTab("ide");
-    setWorkspaceTab("terminal");
-    executeShellCommand(`gcc ${activeFilename} -o a`);
-  });
-
-  wsRunBtn.addEventListener("click", () => {
-    setMobileTab("ide");
-    setWorkspaceTab("terminal");
-    executeShellCommand("./a");
-  });
-
-  // Mobile Bottom Tab View Switching
-  mobileTabDocs.addEventListener("click", () => setMobileTab("docs"));
-  mobileTabIde.addEventListener("click", () => setMobileTab("ide"));
-
-  function setMobileTab(tab) {
-    const contentArea = document.querySelector(".content-area");
-    if (tab === "docs") {
-      mobileTabDocs.classList.add("active");
-      mobileTabIde.classList.remove("active");
-      contentArea.classList.add("view-docs");
-      contentArea.classList.remove("view-ide");
-    } else {
-      mobileTabDocs.classList.remove("active");
-      mobileTabIde.classList.add("active");
-      contentArea.classList.add("view-ide");
-      contentArea.classList.remove("view-docs");
-      // Focus input field when entering terminal tab
-      if (activeWorkspaceTab === "terminal") {
-        terminalInput.focus();
+      if (this.commands[command]) {
+        this.commands[command](args);
+      } else {
+        this.writeTerminalTextLine(`bash: ${command}: command not found. Type 'help' to review commands.`);
       }
     }
-  }
+  };
 
-  // Focus terminal input if clicking anywhere inside the terminal area
-  viewTerminal.addEventListener("click", () => {
-    terminalInput.focus();
-  });
+  // =========================================================================
+  // 7. EVENT BINDINGS & APP INITIALIZATION
+  // =========================================================================
+  const App = {
+    updateThemeIcon() {
+      const isLight = document.body.classList.contains("light-theme");
+      DOM.themeToggleBtn.innerHTML = isLight ? `
+        <svg class="theme-icon moon-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+      ` : `
+        <svg class="theme-icon sun-icon" viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="display: block;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+      `;
+    },
 
-  // Theme Toggle (Light/Dark mode)
-  const savedTheme = localStorage.getItem("theme") || "dark";
-  if (savedTheme === "light") {
-    document.body.classList.add("light-theme");
-  }
+    bindEvents() {
+      // Gedit save
+      DOM.geditSaveBtn.addEventListener("click", () => Editor.saveFile());
 
-  themeToggleBtn.addEventListener("click", () => {
-    document.body.classList.toggle("light-theme");
-    const isLight = document.body.classList.contains("light-theme");
-    localStorage.setItem("theme", isLight ? "light" : "dark");
-  });
+      // Editor dirty tracking
+      DOM.editorTextarea.addEventListener("input", () => Editor.updateGeditFilenameTabState());
 
-  // Initialize Populations
-  populateSidebar();
-  populateSyntaxTab();
-  populateShortcutsTab();
-  
-  // Select initial topic FCFS
-  selectTopic("fork-basic");
-  setWorkspaceTab("terminal");
+      // Copy source code
+      DOM.copyBtn.addEventListener("click", () => {
+        navigator.clipboard.writeText(State.virtualFS[State.activeFilename] || "").then(() => {
+          const prev = DOM.copyBtn.innerText;
+          DOM.copyBtn.innerText = "Copied!";
+          setTimeout(() => { DOM.copyBtn.innerText = prev; }, 1200);
+        });
+      });
+
+      // Terminal focus on click
+      if (DOM.terminalShell) {
+        DOM.terminalShell.addEventListener("click", () => DOM.terminalInput.focus());
+      }
+
+      // Terminal key listener
+      DOM.terminalInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          const val = DOM.terminalInput.value;
+          DOM.terminalInput.value = "";
+          
+          if (State.terminalIsInteractive) {
+            Terminal.writeTerminalHtmlLine(`<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;${UIManager.escapeHTML(val)}`);
+            if (State.activePromptCallback) {
+              const cb = State.activePromptCallback;
+              State.terminalIsInteractive = false;
+              State.activePromptCallback = null;
+              cb(val);
+            }
+          } else {
+            Terminal.executeShellCommand(val);
+          }
+        } else if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (State.commandHistory.length > 0 && State.historyIndex < State.commandHistory.length - 1) {
+            State.historyIndex++;
+            DOM.terminalInput.value = State.commandHistory[State.commandHistory.length - 1 - State.historyIndex];
+          }
+        } else if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (State.historyIndex > 0) {
+            State.historyIndex--;
+            DOM.terminalInput.value = State.commandHistory[State.commandHistory.length - 1 - State.historyIndex];
+          } else if (State.historyIndex === 0) {
+            State.historyIndex = -1;
+            DOM.terminalInput.value = "";
+          }
+        }
+      });
+
+      // Floating jump to code
+      if (DOM.floatingCodeBtn && DOM.docCodeWrapper) {
+        DOM.floatingCodeBtn.addEventListener("click", () => {
+          const containerTop = DOM.docPanel.getBoundingClientRect().top;
+          const blockTop = DOM.docCodeWrapper.getBoundingClientRect().top;
+          const relativeTop = blockTop - containerTop + DOM.docPanel.scrollTop;
+          DOM.docPanel.scrollTo({ top: relativeTop - 20, behavior: "smooth" });
+        });
+      }
+
+      // Markdown links, crosslinks, chips clicks delegator
+      DOM.docBody.addEventListener("click", (e) => {
+        const crossLink = e.target.closest(".doc-crosslink");
+        if (crossLink) {
+          e.preventDefault();
+          const targetId = crossLink.dataset.topicTarget;
+          if (targetId) { UIManager.selectTopic(targetId); UIManager.closeSidebarDrawer(); }
+          return;
+        }
+
+        const syntaxLink = e.target.closest(".syntax-crosslink");
+        if (syntaxLink) {
+          e.preventDefault();
+          const cardId = syntaxLink.dataset.syntaxCard;
+          if (cardId) UIManager.highlightSyntaxCard(cardId);
+          return;
+        }
+
+        const chip = e.target.closest(".topic-chip");
+        if (chip) {
+          e.preventDefault();
+          const targetId = chip.dataset.topicTarget;
+          if (targetId) { UIManager.selectTopic(targetId); UIManager.closeSidebarDrawer(); }
+          return;
+        }
+
+        const a = e.target.closest("a");
+        if (!a) return;
+        const href = a.getAttribute("href");
+        if (!href) return;
+
+        if (href.startsWith("http://") || href.startsWith("https://")) {
+          e.preventDefault();
+          window.open(href, '_blank');
+          return;
+        }
+
+        if (href.startsWith("#line-")) {
+          e.preventDefault();
+          const lineNum = href.split("-")[1];
+          const targetRow = document.getElementById(`line-L${lineNum}`);
+          if (targetRow) {
+            const containerTop = DOM.docPanel.getBoundingClientRect().top;
+            const rowTop = targetRow.getBoundingClientRect().top;
+            const relativeTop = rowTop - containerTop + DOM.docPanel.scrollTop;
+            DOM.docPanel.scrollTo({ top: relativeTop - 120, behavior: "smooth" });
+            targetRow.classList.add("active-highlight");
+            setTimeout(() => targetRow.classList.remove("active-highlight"), 1500);
+          } else {
+            DOM.docCodeWrapper.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        }
+        else if (href.startsWith("#syntax-")) {
+          e.preventDefault();
+          UIManager.selectTopic("c-syntaxes");
+          UIManager.closeSidebarDrawer();
+          setTimeout(() => {
+            const idTag = href.substring(1);
+            const targetElement = document.getElementById(idTag);
+            if (targetElement) {
+              targetElement.scrollIntoView({ behavior: "smooth", block: "start" });
+              targetElement.style.backgroundColor = "rgba(37, 99, 235, 0.1)";
+              setTimeout(() => { targetElement.style.backgroundColor = ""; }, 1500);
+            }
+          }, 100);
+        }
+        else if (href.startsWith("#") && document.querySelector(`.menu-item[data-id="${href.substring(1)}"]`)) {
+          e.preventDefault();
+          UIManager.selectTopic(href.substring(1));
+          UIManager.closeSidebarDrawer();
+        }
+      });
+
+      // Compile and Run Trigger
+      if (DOM.compileTriggerBtn) {
+        DOM.compileTriggerBtn.addEventListener("click", () => {
+          if (!State.activeTopicId || State.activeTopicId === "help-guide" || State.activeTopicId === "c-syntaxes") return;
+          
+          // Reset any running terminal simulation prompts to prevent collisions
+          State.terminalIsInteractive = false;
+          State.activePromptCallback = null;
+
+          const refCode = State.savedCode[State.activeTopicId] || "";
+          const splitFiles = State.extractFilesFromCode(refCode);
+
+          DOM.compileTriggerBtn.classList.add("running");
+          DOM.compileTriggerBtn.textContent = "$ running...";
+
+          UIManager.setWorkspaceTab("terminal");
+
+          if (splitFiles) {
+            Object.entries(splitFiles).forEach(([fn, content]) => {
+              if (!State.virtualFS[fn]) {
+                State.virtualFS[fn] = content;
+              }
+            });
+            DOM.editorTextarea.value = State.virtualFS[State.activeFilename] || "";
+            Editor.updateGeditFilenameTabState();
+            State.saveVfsToLocalStorage();
+
+            if (State.activeTopicId === "execv-call") {
+              setTimeout(() => {
+                Terminal.simulateTypingAndEnter("gcc first.c -o first", () => {
+                  setTimeout(() => {
+                    Terminal.simulateTypingAndEnter("gcc second.c -o a", () => {
+                      setTimeout(() => {
+                        Terminal.simulateTypingAndEnter("./a", () => {
+                          DOM.compileTriggerBtn.classList.remove("running");
+                          DOM.compileTriggerBtn.textContent = "$ Compile & Run";
+                        });
+                      }, 600);
+                    });
+                  }, 600);
+                });
+              }, 350);
+            } else if (State.activeTopicId === "shm-even-odd") {
+              setTimeout(() => {
+                Terminal.simulateTypingAndEnter("gcc writer.c -o writer", () => {
+                  setTimeout(() => {
+                    Terminal.simulateTypingAndEnter("gcc reader.c -o a", () => {
+                      setTimeout(() => {
+                        Terminal.simulateTypingAndEnter("./a", () => {
+                          DOM.compileTriggerBtn.classList.remove("running");
+                          DOM.compileTriggerBtn.textContent = "$ Compile & Run";
+                        });
+                      }, 600);
+                    });
+                  }, 600);
+                });
+              }, 350);
+            }
+          } else {
+            const currentVal = DOM.editorTextarea.value.trim();
+            if (!currentVal && refCode) {
+              DOM.editorTextarea.value = refCode;
+              State.virtualFS[State.activeFilename] = refCode;
+              State.saveVfsToLocalStorage();
+            }
+            Editor.updateGeditFilenameTabState();
+
+            setTimeout(() => {
+              Terminal.simulateTypingAndEnter(`gcc ${State.activeFilename} -o a`, () => {
+                setTimeout(() => {
+                  Terminal.simulateTypingAndEnter("./a", () => {
+                    DOM.compileTriggerBtn.classList.remove("running");
+                    DOM.compileTriggerBtn.textContent = "$ Compile & Run";
+                  });
+                }, 600);
+              });
+            }, 350);
+          }
+        });
+      }
+
+      // Workspace Toggle
+      if (DOM.workspaceToggleBtn) {
+        DOM.workspaceToggleBtn.addEventListener("click", () => UIManager.toggleWorkspacePanel());
+      }
+
+      // Tab navigators
+      if (DOM.workspaceTabTerminal) {
+        DOM.workspaceTabTerminal.addEventListener("click", () => UIManager.setWorkspaceTab("terminal"));
+      }
+      if (DOM.workspaceTabGedit) {
+        DOM.workspaceTabGedit.addEventListener("click", () => UIManager.setWorkspaceTab("gedit"));
+      }
+
+      // Close tab button
+      const geditTabClose = document.getElementById("gedit-tab-close");
+      if (geditTabClose) {
+        geditTabClose.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (DOM.workspaceTabGedit) {
+            DOM.workspaceTabGedit.style.display = "none";
+          }
+          UIManager.setWorkspaceTab("terminal");
+        });
+      }
+
+      // Mobile navigations
+      DOM.mobileMenuBtn.addEventListener("click", () => UIManager.openSidebarDrawer());
+      DOM.sidebarBackdrop.addEventListener("click", () => UIManager.closeSidebarDrawer());
+      
+      if (DOM.mobileTerminalToggle) {
+        DOM.mobileTerminalToggle.addEventListener("click", () => {
+          const contentArea = document.querySelector(".content-area");
+          if (contentArea.classList.contains("view-ide")) {
+            UIManager.setMobileTab("docs");
+          } else {
+            UIManager.setMobileTab("ide");
+          }
+        });
+      }
+
+      DOM.mobileTabDocs.addEventListener("click", () => UIManager.setMobileTab("docs"));
+      DOM.mobileTabIde.addEventListener("click", () => UIManager.setMobileTab("ide"));
+
+      // Light/Dark mode toggler
+      DOM.themeToggleBtn.addEventListener("click", () => {
+        document.body.classList.toggle("light-theme");
+        const isLight = document.body.classList.contains("light-theme");
+        localStorage.setItem("theme", isLight ? "light" : "dark");
+        this.updateThemeIcon();
+      });
+
+      // Compatibility elements triggers (Automated tests click proxies)
+      const compatCompileBtn = document.getElementById("ws-compile-btn");
+      const compatRunBtn = document.getElementById("ws-run-btn");
+      if (compatCompileBtn) {
+        compatCompileBtn.addEventListener("click", () => {
+          if (DOM.compileTriggerBtn) DOM.compileTriggerBtn.click();
+        });
+      }
+      if (compatRunBtn) {
+        compatRunBtn.addEventListener("click", () => {
+          Terminal.executeShellCommand("./a");
+        });
+      }
+
+      // Scroll observer to hide floating code button
+      if (DOM.docPanel && DOM.floatingCodeBtn && DOM.docCodeWrapper) {
+        DOM.docPanel.addEventListener("scroll", () => {
+          if (DOM.docCodeWrapper.style.display !== "none") {
+            const wrapperRect = DOM.docCodeWrapper.getBoundingClientRect();
+            const panelRect = DOM.docPanel.getBoundingClientRect();
+            if (wrapperRect.top < panelRect.bottom - 40) {
+              DOM.floatingCodeBtn.style.opacity = "0";
+              DOM.floatingCodeBtn.style.pointerEvents = "none";
+            } else {
+              DOM.floatingCodeBtn.style.opacity = "1";
+              DOM.floatingCodeBtn.style.pointerEvents = "auto";
+            }
+          }
+        });
+      }
+    },
+
+    bootstrap() {
+      // 1. Setup marked headings slugifier
+      UIManager.setupMarkedRenderer();
+      
+      // 2. Initialize terminal prompts
+      Terminal.updatePromptLabel();
+
+      // 3. Load user theme settings
+      const savedTheme = localStorage.getItem("theme") || "dark";
+      if (savedTheme === "light") {
+        document.body.classList.add("light-theme");
+      }
+      this.updateThemeIcon();
+
+      // 4. Load panel collapse state
+      const isCollapsed = localStorage.getItem("workspace_collapsed") === "true";
+      if (isCollapsed && window.innerWidth > 768) {
+        UIManager.closeWorkspacePanel();
+      } else {
+        UIManager.openWorkspacePanel();
+      }
+
+      // 5. Populate Sidebar elements
+      UIManager.populateSidebar();
+
+      // 6. Bind events
+      this.bindEvents();
+
+      // 7. Select initial topic
+      UIManager.selectTopic("fork-basic");
+    }
+  };
+
+  // Run the app bootstrap routine
+  App.bootstrap();
 });

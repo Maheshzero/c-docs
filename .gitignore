@@ -2,5 +2,51 @@
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# Environment & Secrets (CRITICAL - Never commit)
 .env*
 !.env.example
+wrangler.toml
+wrangler.secure.toml
+
+# Build output (Obfuscated - don't track in version control)
+dist/
+build/
+*.min.js
+*.min.css
+*.map
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Build scripts (don't share build methodology)
+build-obfuscate.js
+rollup.config.js
+
+# Backups
+*.backup
+*.bak
+wrangler.jsonc.backup
+
+# Testing
+coverage/
+.nyc_output/
+

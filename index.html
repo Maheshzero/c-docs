@@ -4,36 +4,39 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>os-uce — OS Lab Reference</title>
-  <meta name="description" content="Interactive C documentation and Linux command-line terminal simulator for Operating Systems lab programs." />
+  <meta name="description" content="Interactive C documentation and Linux terminal simulator for the UCE Operating Systems lab syllabus." />
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
   <!-- Mobile Top Nav -->
   <div class="mobile-nav-top">
-    <button id="mobile-menu-btn" class="mobile-btn">☰ Topics</button>
-    <span class="mobile-title">os-uce</span>
-    <div style="width: 80px;"></div> <!-- Spacer replacing the old run button -->
+    <button id="mobile-menu-btn" class="mobile-btn">Topics</button>
+    <div class="mobile-title-group">
+      <span class="mobile-title">os-uce</span>
+      <span id="mobile-active-topic" class="mobile-topic-label">Basic fork()</span>
+    </div>
+    <button id="mobile-terminal-toggle" class="mobile-btn">Workspace</button>
   </div>
 
   <!-- Sidebar Backdrop -->
   <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
 
-  <!-- ============================================================
-       MAIN LAYOUT
-  ============================================================ -->
-  <div class="app-shell">
+  <div class="app-shell" id="app-shell">
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div class="sidebar-brand-row">
           <div>
             <span class="sidebar-brand">os-uce</span>
             <span class="sidebar-sub">OS Lab Reference</span>
           </div>
-          <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Light/Dark Mode">🌓</button>
+          <button id="theme-toggle-btn" class="theme-toggle-btn" title="Toggle Light/Dark Mode"></button>
         </div>
       </div>
       <nav>
@@ -49,169 +52,106 @@
 
       <!-- LEFT: DOCUMENTATION PANEL -->
       <section class="doc-panel" id="doc-panel">
-        <div class="doc-header">
+
+        <!-- Sticky Header Bar -->
+        <div class="doc-header-bar">
           <span id="doc-category" class="doc-category">Category</span>
-          <h1 id="doc-title" class="doc-title">Topic Title</h1>
-          <p id="doc-description" class="doc-description">Description goes here.</p>
-        </div>
-
-        <!-- Mismatch / Warning Alert -->
-        <div id="compatibility-alert" class="compat-alert" style="display:none;">
-          <span class="alert-icon">⚠</span>
-          <span id="warning-text"></span>
-        </div>
-
-        <!-- Doc body: deconstruction + explanation + compatibility -->
-        <div id="doc-body" class="doc-body"></div>
-
-        <!-- Code Block -->
-        <div class="code-block-wrapper">
-          <div class="code-block-header">
-            <span id="doc-code-filename" class="code-filename">filename.c</span>
-            <button id="copy-code-btn" class="copy-btn">Copy</button>
+          <div class="doc-header-actions">
+            <button id="floating-code-btn" class="floating-code-btn" title="Jump to Source Code">View Code</button>
+            <button id="workspace-toggle-btn" class="workspace-toggle-btn" title="Toggle Editor/Terminal Workspace">Workspace</button>
           </div>
-          <pre class="code-block"><code id="doc-code-code"></code></pre>
         </div>
+
+        <div id="doc-tab-notes" class="doc-tab-content active">
+          <div class="doc-header">
+            <h1 id="doc-title" class="doc-title">Topic Title</h1>
+            <p id="doc-description" class="doc-description">Description goes here.</p>
+          </div>
+
+          <div id="compatibility-alert" class="compat-alert" style="display:none;">
+            <span class="alert-icon">!</span>
+            <span id="warning-text"></span>
+          </div>
+
+          <div id="doc-body" class="doc-body doc-md-content">
+            <div id="doc-markdown-content">
+              <div class="doc-loading">Loading documentation...</div>
+            </div>
+            
+            <!-- Code Block wrapper -->
+            <div class="code-block-wrapper" id="doc-code-wrapper" style="margin-top: 32px;">
+              <div class="code-block-header">
+                <span id="doc-code-filename" class="code-filename">filename.c</span>
+                <div class="code-block-actions">
+                  <button id="copy-code-btn" class="copy-btn">Copy</button>
+                  <button id="compile-trigger-btn" class="compile-trigger-btn">$ Compile &amp; Run</button>
+                </div>
+              </div>
+              <div class="code-block" id="doc-code-container">
+                <!-- code rows populated dynamically by JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
       </section>
 
-      <!-- RIGHT: TERMINAL & GEDIT WORKSPACE -->
-      <aside class="right-panel">
-
-        <!-- WORKSPACE PANEL -->
+      <!-- RIGHT: WORKSPACE PANEL (Gedit & Terminal Tabs) -->
+      <aside class="right-panel" id="right-panel">
         <div class="workspace-panel">
-          
-          <!-- Workspace Tabs Header -->
           <div class="workspace-tabs-header">
-            <div class="ws-tabs-group" style="display: flex;">
+            <div class="ws-tabs-group">
               <button id="workspace-tab-terminal" class="w-tab-btn active">Terminal</button>
-              <button id="workspace-tab-gedit" class="w-tab-btn">Gedit Editor</button>
-            </div>
-            <div class="ws-actions-group">
-              <button id="ws-compile-btn" class="ws-btn compile-btn">⚙ Compile</button>
-              <button id="ws-run-btn" class="ws-btn run-btn">▶ Run</button>
+              <button id="workspace-tab-gedit" class="w-tab-btn" style="display: none;">Gedit Editor <span id="gedit-tab-close" class="tab-close-btn" style="margin-left: 6px; font-weight: bold; cursor: pointer;">&times;</span></button>
             </div>
           </div>
 
-          <!-- Tab View 1: Linux Bash Terminal -->
+          <!-- Terminal View -->
           <div id="view-terminal" class="workspace-view active">
-            <div class="terminal-shell">
+            <div class="terminal-shell" id="terminal-shell">
               <div id="terminal-lines" class="terminal-lines-content">
-                <div class="terminal-line">Welcome to Ubuntu 24.04 LTS (GNU/Linux 6.8.0-generic)</div>
-                <div class="terminal-line">Type 'help' or check the 'How to Run' tab below to begin.</div>
+                <div class="terminal-line">os-uce — Linux Terminal Simulator</div>
+                <div class="terminal-line">Type 'help' to see available commands.</div>
                 <div class="terminal-line"></div>
               </div>
               <div class="terminal-input-line">
-                <span class="terminal-prompt">user@uce-lab:~/os_lab$ </span>
-                <input id="terminal-input" class="terminal-input cursor-blink" type="text" autocomplete="off" spellcheck="false" />
+                <span id="terminal-prompt-label" class="terminal-prompt"><span class="prompt-user">guest@uce</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;</span>
+                <input id="terminal-input" class="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="Terminal Input" />
               </div>
             </div>
           </div>
 
-          <!-- Tab View 2: Gedit Text Editor -->
+          <!-- Gedit View -->
           <div id="view-gedit" class="workspace-view">
             <div class="gedit-window">
               <div class="gedit-header">
                 <span id="gedit-filename-tab" class="gedit-tab active">program.c</span>
                 <button id="gedit-save-btn" class="gedit-save-btn">Save</button>
               </div>
-              <textarea id="editor-textarea" class="gedit-editor" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Vertical Resize Handle -->
-        <div id="tc-resize-handle" class="tc-resize-handle"></div>
-
-        <!-- BOTTOM HELP TABS -->
-        <div class="tabs-panel">
-          <div class="tabs-header">
-            <button id="tab-btn-syntax"    class="tab-btn active">Syntax Reference</button>
-            <button id="tab-btn-shortcuts" class="tab-btn">How to Run</button>
-            <button id="tab-btn-guide"     class="tab-btn">Student Guide</button>
-          </div>
-
-          <div id="tab-content-syntax" class="tab-content active">
-            <p id="syntax-panel-desc" class="tab-intro"></p>
-            <div id="syntax-items-list"></div>
-          </div>
-
-          <div id="tab-content-shortcuts" class="tab-content">
-            <div id="shortcuts-panel-content"></div>
-          </div>
-
-          <div id="tab-content-guide" class="tab-content">
-            <div class="guide-panel-content">
-              <h3>🎓 Step-by-Step Student Lab Guide</h3>
-              <p>Welcome to <strong>os-uce</strong>! This website is an interactive study reference and mock playground designed specifically for the UCE OS Lab syllabus. Follow these guidelines to navigate and run your C programs.</p>
-              
-              <h4>📱 Mobile vs. 💻 Laptop Viewport Layouts</h4>
-              <p>The interface automatically adapts based on your screen size:</p>
-              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: circle;">
-                <li><strong>Laptop/Desktop Layout</strong>: Displays side-by-side panels. Sidebar menu on the left, step-by-step Documentation in the middle, and the Workspace (Gedit + Terminal) on the right.</li>
-                <li><strong>Mobile Phone Layout</strong>: Toggle panels using the bottom bar:
-                  <ul style="margin-left: 18px; margin-top: 3px; list-style-type: square;">
-                    <li><strong>Documentation Tab</strong>: Shows explanations, code listings, and syntax lists.</li>
-                    <li><strong>Workspace Tab</strong>: Contains the active Terminal and Gedit Code Editor.</li>
-                    <li><strong>☰ Topics Drawer</strong> (top nav): Slide open to change programs.</li>
-                  </ul>
-                </li>
-              </ul>
-
-              <h4>🎯 How to Compile and Run a Program</h4>
-              <p>To run any of the 18 syllabus algorithms, follow this workflow:</p>
-              <ol style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: decimal;">
-                <li>Select a program (e.g., <strong>Basic fork()</strong> or <strong>FCFS Scheduling</strong>).</li>
-                <li>Go to the <strong>Workspace</strong> panel, then click the <strong>Gedit Editor</strong> tab.</li>
-                <li>Edit or examine the C source code. If you make modifications, Gedit will show a dirty state indicator (<code>*</code>) prefixing the filename.</li>
-                <li><strong>Click Save</strong> (or type <code>Ctrl+S</code> equivalent). <em>Important: GCC reads code from disk; if you don't save, it compiles the last saved state!</em></li>
-                <li>Switch to the <strong>Terminal</strong> tab (or click the shortcut buttons on the right of the header):
-                  <ul style="margin-left: 18px; margin-top: 3px; list-style-type: disc;">
-                    <li>Click <strong>⚙ Compile</strong> (or type <code>gcc filename.c -o a</code>) to compile.</li>
-                    <li>Click <strong>▶ Run</strong> (or type <code>./a</code>) to run the compiled binary executable.</li>
-                  </ul>
-                </li>
-              </ol>
-
-              <h4>🐚 Simulated Linux Commands Reference</h4>
-              <p>Inside the Terminal shell, you can type real Linux commands to interact with your code:</p>
-              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: square;">
-                <li><code>ls</code>: Lists all current files in the directory. Source files appear in grey, and compiled binaries (like <code>a</code>) appear in <span style="color: #22c55e; font-weight: bold;">green</span>.</li>
-                <li><code>gedit &lt;filename&gt;.c</code>: Opens the file in Gedit. If the file doesn't exist, a new blank file is created.</li>
-                <li><code>cat &lt;filename&gt;</code>: Prints the raw code or text content directly inside the terminal.</li>
-                <li><code>rm &lt;filename&gt;</code>: Deletes the file from the workspace filesystem.</li>
-                <li><code>clear</code>: Clears the terminal screen logs.</li>
-                <li><code>help</code>: Displays command options.</li>
-              </ul>
-
-              <h4>⚠️ Compiler Warnings &amp; Validations</h4>
-              <p>To prepare you for standard GCC behaviors, the mock compiler validates code against common pitfalls:</p>
-              <ul style="margin-left: 18px; margin-top: 5px; margin-bottom: 12px; list-style-type: square;">
-                <li><strong>Semicolons (<code>;</code>)</strong>: Omitted semicolons will fail compilation and throw syntax error logs in red.</li>
-                <li><strong>Implicit Declarations</strong>: Omitted headers (like <code>&lt;unistd.h&gt;</code> when using <code>fork()</code> or <code>&lt;sys/shm.h&gt;</code> when using <code>shmget()</code>) will print compiler warnings in yellow.</li>
-              </ul>
-
-              <h4>🧪 Code Sandbox Playground</h4>
-              <p>You can write custom files! Type <code>gedit sandbox.c</code>, write custom C code, click Save, Compile, and run <code>./a</code>. The terminal dynamically scans your custom code for POSIX structures (like thread spawning, process forks, or shared memory) and simulates their executions dynamically!</p>
+              <textarea id="editor-textarea" class="gedit-editor" placeholder="// Write your C program here..." spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
             </div>
           </div>
         </div>
-
       </aside>
     </main>
 
     <!-- Mobile Bottom Nav -->
     <div class="mobile-nav-bottom">
-      <button id="mobile-tab-docs" class="mobile-tab-btn active">Documentation</button>
+      <button id="mobile-tab-docs" class="mobile-tab-btn active">Notes</button>
       <button id="mobile-tab-ide" class="mobile-tab-btn">Workspace</button>
     </div>
   </div>
 
-  <!-- ============================================================
-       SCRIPTS
-  ============================================================ -->
-  <script src="data.js"></script>
-  <script src="compiler.js"></script>
-  <script src="app.js"></script>
+  <!-- Compatibility elements for automated tests (clicks are routed to the proper buttons) -->
+  <div style="display: none;">
+    <button id="ws-compile-btn"></button>
+    <button id="ws-run-btn"></button>
+  </div>
+
+  <script src="dist/marked.min.js"></script>
+  <script src="dist/data.min.js"></script>
+  <script src="dist/docs_content.min.js"></script>
+  <script src="dist/compiler.min.js"></script>
+  <script src="dist/app.min.js"></script>
 </body>
 </html>

@@ -25,18 +25,17 @@ jobs:
       - name: Install dependencies
         run: npm install
       
-      - name: Build (Minify & Obfuscate)
+      - name: Build (Copy original assets)
         run: |
           set -euo pipefail
           mkdir -p dist
-          # Minify and mangle JS files with terser (installed by npm)
-          npx terser app.js -c -m -o dist/app.min.js || true
-          npx terser compiler.js -c -m -o dist/compiler.min.js || true
-          npx terser data.js -c -m -o dist/data.min.js || true
-          if [ -f docs_content.js ]; then npx terser docs_content.js -c -m -o dist/docs_content.min.js || true; fi
-          # copy already-minified libs
-          if [ -f marked.min.js ]; then cp marked.min.js dist/; fi
-          echo "✅ Inline build complete"
+          # Copy the original JS assets into dist without minification/obfuscation
+          cp -f app.js dist/app.js || true
+          cp -f compiler.js dist/compiler.js || true
+          cp -f data.js dist/data.js || true
+          if [ -f docs_content.js ]; then cp -f docs_content.js dist/docs_content.js; fi
+          if [ -f marked.min.js ]; then cp -f marked.min.js dist/; fi
+          echo "✅ Copied original assets into dist/"
       
       - name: Verify build output
         run: |
