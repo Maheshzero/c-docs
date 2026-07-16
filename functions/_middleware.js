@@ -59,23 +59,56 @@ export default {
       return new Response("Static asset binding not available", { status: 500 });
     }
 
-    const response = await assetsBinding.fetch(assetRequest);
+    async function fetchAsset(pathname) {
+      const targetUrl = new URL(request.url);
+      targetUrl.pathname = pathname;
+      const req = new Request(targetUrl.toString(), request);
+      return assetsBinding.fetch(req);
+    }
+
+    const assetPath = assetRequest.url ? new URL(assetRequest.url).pathname : url.pathname;
+    const candidates = [];
+    if (assetPath === "/") {
+      candidates.push("/index.html", "/dist/index.html", "/dist/dist/index.html");
+    } else {
+      candidates.push(assetPath);
+      if (!assetPath.startsWith("/dist/")) {
+        candidates.push(`/dist${assetPath}`);
+      }
+      if (assetPath.startsWith("/dist/")) {
+        candidates.push(assetPath.replace(/^\/dist\//, "/"));
+      }
+      if (!assetPath.startsWith("/dist/dist/")) {
+        candidates.push(`/dist/dist${assetPath}`);
+      }
+    }
+
+    let response;
+    for (const candidate of candidates) {
+      response = await fetchAsset(candidate);
+      if (response.status !== 404) break;
+    }
+
+    if (!response) {
+      return new Response("Asset fetch failed", { status: 500 });
+    }
+
     const hasNoBody =
       response.status === 204 ||
       response.status === 304 ||
       (response.status >= 300 && response.status < 400);
     const body = hasNoBody ? null : response.body;
     const headers = new Headers(response.headers);
-    const pathname = new URL(assetRequest.url).pathname;
+    const pathnameToUse = new URL(response.url).pathname;
     const contentType = headers.get("content-type");
     if (!contentType || !contentType.trim()) {
-      if (pathname.endsWith(".js")) {
+      if (pathnameToUse.endsWith(".js")) {
         headers.set("Content-Type", "application/javascript; charset=utf-8");
-      } else if (pathname.endsWith(".css")) {
+      } else if (pathnameToUse.endsWith(".css")) {
         headers.set("Content-Type", "text/css; charset=utf-8");
-      } else if (pathname.endsWith(".html")) {
+      } else if (pathnameToUse.endsWith(".html")) {
         headers.set("Content-Type", "text/html; charset=utf-8");
-      } else if (pathname.endsWith(".svg")) {
+      } else if (pathnameToUse.endsWith(".svg")) {
         headers.set("Content-Type", "image/svg+xml");
       }
     }
