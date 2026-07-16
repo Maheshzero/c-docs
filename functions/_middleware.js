@@ -1,6 +1,6 @@
 // Keep it in memory. It resets when the isolate is recycled.
 const ipLimits = new Map();
-const salt = crypto.randomUUID(); // Rotating salt per isolate instance
+let salt; // initialize lazily inside handler to avoid disallowed global random operations
 
 export async function onRequest(context) {
   const { request } = context;
@@ -18,16 +18,18 @@ export async function onRequest(context) {
                 lowerUA.includes("playwright");
                 
   if (isBot) {
-    return new Response("Access Denied: Automated requests are not allowed.", { status: 403 });
+    return new Response("", { status: 403 });
   }
 
   // 2. HTTP Method restriction
   if (request.method !== "GET" && request.method !== "HEAD") {
-    return new Response("Method Not Allowed", { status: 405 });
+    return new Response("", { status: 405 });
   }
 
   // 3. In-memory Rate Limiter (Token Bucket per Isolate)
   const clientIP = request.headers.get("CF-Connecting-IP") || "127.0.0.1";
+  // Lazily initialize a per-isolate salt inside the request handler
+  if (!salt) salt = crypto.randomUUID();
   const ipHash = await hashIP(clientIP, salt);
   const now = Date.now();
   
@@ -41,7 +43,7 @@ export async function onRequest(context) {
     } else {
       data.count += 1;
       if (data.count > 60) { // Limit to 60 requests per minute
-        return new Response("Too Many Requests. Please slow down.", { status: 429 });
+        return new Response("", { status: 429 });
       }
     }
   }

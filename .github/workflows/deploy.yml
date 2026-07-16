@@ -43,11 +43,12 @@ jobs:
           ls -lah dist/
           echo "✅ Build successful"
       
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: deploy functions/_middleware.js --name oslab --compatibility-date 2026-07-16
+      - name: Install Wrangler v4 and deploy
+        run: |
+          set -euo pipefail
+          # Install Wrangler v4 locally (no save) and run deploy via npx
+          npm install --no-save wrangler@4
+          npx wrangler deploy --name oslab --compatibility-date 2026-07-16
         env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           WRANGLER_CONFIG_DIR: .
