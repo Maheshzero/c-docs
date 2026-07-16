@@ -51,7 +51,15 @@ export default {
         ? new Request(new URL("/index.html", request.url), request)
         : request;
 
-    const response = await env.ASSETS.fetch(assetRequest);
+    const assetsBinding =
+      (env && env.ASSETS) ||
+      (typeof ASSETS !== "undefined" ? ASSETS : undefined);
+
+    if (!assetsBinding) {
+      return new Response("Static asset binding not available", { status: 500 });
+    }
+
+    const response = await assetsBinding.fetch(assetRequest);
     const hasNoBody =
       response.status === 204 ||
       response.status === 304 ||
