@@ -13,6 +13,7 @@ wrangler.secure.toml
 dist/
 build/
 *.min.js
+!marked.min.js
 *.min.css
 *.map
 
