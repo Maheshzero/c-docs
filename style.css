@@ -960,6 +960,34 @@ body.light-theme #terminal-container {
 
 .xterm .xterm-viewport {
   background-color: transparent !important;
+  overflow-y: auto !important;
+}
+
+/* Custom scrollbars for xterm.js viewport */
+.xterm .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+  display: block !important;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.3) !important;
+  border-radius: 4px;
+}
+
+.xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(161, 161, 170, 0.5) !important;
+}
+
+body.light-theme .xterm .xterm-viewport::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.2) !important;
+}
+
+body.light-theme .xterm .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.4) !important;
 }
 
 /* Gedit Window */
