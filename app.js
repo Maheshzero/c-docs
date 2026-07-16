@@ -305,8 +305,12 @@ document.addEventListener("DOMContentLoaded", () => {
   State.initVFS();
 
   // =========================================================================
-  // 3. DOM ELEMENT CACHE
+  // 3. DOM ELEMENT CACHE & XTERM VARIABLES
   // =========================================================================
+  let term;
+  let fitAddon;
+  let termInputBuffer = "";
+
   const DOM = {
     sidebarMenu: document.getElementById("sidebar-menu-list"),
     docCategory: document.getElementById("doc-category"),
@@ -333,10 +337,7 @@ document.addEventListener("DOMContentLoaded", () => {
     editorTextarea: document.getElementById("editor-textarea"),
     
     // Terminal elements
-    terminalLines: document.getElementById("terminal-lines"),
-    terminalInput: document.getElementById("terminal-input"),
-    terminalPromptLabel: document.getElementById("terminal-prompt-label"),
-    terminalShell: document.getElementById("terminal-shell"),
+    terminalContainer: document.getElementById("terminal-container"),
     
     // Triggers and panels
     compileTriggerBtn: document.getElementById("compile-trigger-btn"),
@@ -707,6 +708,7 @@ document.addEventListener("DOMContentLoaded", () => {
       DOM.rightPanel.classList.remove("collapsed");
       DOM.workspaceToggleBtn.classList.add("active-panel");
       localStorage.setItem("workspace_collapsed", "false");
+      setTimeout(() => { if (fitAddon) { try { fitAddon.fit(); } catch(e) {} } }, 350);
     },
 
     closeWorkspacePanel() {
@@ -735,7 +737,10 @@ document.addEventListener("DOMContentLoaded", () => {
         DOM.workspaceTabGedit.classList.remove("active");
         DOM.viewTerminal.classList.add("active");
         DOM.viewGedit.classList.remove("active");
-        setTimeout(() => DOM.terminalInput.focus(), 60);
+        if (term) {
+          setTimeout(() => term.focus(), 60);
+          setTimeout(() => { if (fitAddon) { try { fitAddon.fit(); } catch(e) {} } }, 100);
+        }
       } else {
         if (DOM.workspaceTabGedit) {
           DOM.workspaceTabGedit.style.display = "inline-block";
@@ -768,7 +773,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         
         if (State.activeWorkspaceTab === "terminal") {
-          DOM.terminalInput.focus();
+          if (term) term.focus();
         } else {
           DOM.editorTextarea.focus();
         }
@@ -826,51 +831,87 @@ document.addEventListener("DOMContentLoaded", () => {
   // 6. TERMINAL & SIMULATION ENGINE
   // =========================================================================
   const Terminal = {
+    htmlToAnsi(html) {
+      if (!html) return "";
+      let s = html;
+      s = s.replace(/<span class="prompt-user">(.*?)<\/span>/g, "\x1b[1;36m$1\x1b[0m");
+      s = s.replace(/<span class="prompt-dir">(.*?)<\/span>/g, "\x1b[1;33m$1\x1b[0m");
+      s = s.replace(/<span style="color:\s*var\(--warn-text\);">(.*?)<\/span>/g, "\x1b[33m$1\x1b[0m");
+      s = s.replace(/<span style="color:\s*var\(--danger\);">(.*?)<\/span>/g, "\x1b[31m$1\x1b[0m");
+      s = s.replace(/<span style="color:\s*var\(--accent\);[^"]*">(.*?)<\/span>/g, "\x1b[1;35m$1\x1b[0m");
+      s = s.replace(/<span style="color:\s*var\(--accent\);">(.*?)<\/span>/g, "\x1b[1;35m$1\x1b[0m");
+      s = s.replace(/<span style="color:\s*#10b981;[^"]*">(.*?)<\/span>/g, "\x1b[1;32m$1\x1b[0m");
+      s = s.replace(/<[^>]*>/g, "");
+      s = s.replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+      return s;
+    },
+
     writeTerminalTextLine(text) {
-      const line = document.createElement("div");
-      line.className = "terminal-line";
-      line.innerText = text;
-      DOM.terminalLines.appendChild(line);
-      DOM.terminalShell.scrollTop = DOM.terminalShell.scrollHeight;
+      if (term) {
+        term.write(text + "\r\n");
+      }
     },
 
     writeTerminalHtmlLine(html) {
-      const line = document.createElement("div");
-      line.className = "terminal-line";
-      line.innerHTML = html;
-      DOM.terminalLines.appendChild(line);
-      DOM.terminalShell.scrollTop = DOM.terminalShell.scrollHeight;
+      if (term) {
+        term.write(this.htmlToAnsi(html) + "\r\n");
+      }
     },
 
     clearTerminal() {
-      DOM.terminalLines.innerHTML = "";
+      if (term) {
+        term.clear();
+      }
+    },
+
+    writePrompt() {
+      if (term) {
+        const prompt = `\x1b[1;36m${State.terminalUsername}@${State.terminalHostname}\x1b[0m:\x1b[1;33m~/os_lab\x1b[0m$ `;
+        term.write(prompt);
+      }
+    },
+
+    showPrompt() {
+      this.writePrompt();
     },
 
     updatePromptLabel() {
-      if (DOM.terminalPromptLabel) {
-        DOM.terminalPromptLabel.innerHTML = `<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;`;
+      // Prompt updating is done directly in the terminal stream, no DOM label to update
+    },
+
+    updateTheme() {
+      if (term) {
+        const isLight = document.body.classList.contains("light-theme");
+        term.options.theme = {
+          background: isLight ? '#ffffff' : '#09090b',
+          foreground: isLight ? '#0f172a' : '#a1a1aa',
+          cursor: isLight ? '#0f172a' : '#c084fc',
+          selectionBackground: isLight ? 'rgba(15, 23, 42, 0.15)' : 'rgba(192, 132, 252, 0.25)',
+        };
       }
     },
 
     simulateTypingAndEnter(commandText, callback) {
       let index = 0;
-      DOM.terminalInput.value = "";
-      DOM.terminalInput.disabled = true;
+      termInputBuffer = "";
       
       const typeNextChar = () => {
         if (index < commandText.length) {
-          DOM.terminalInput.value += commandText.charAt(index);
+          const char = commandText.charAt(index);
+          if (term) {
+            term.write(char);
+          }
+          termInputBuffer += char;
           index++;
-          DOM.terminalInput.focus();
-          DOM.terminalShell.scrollTop = DOM.terminalShell.scrollHeight;
           setTimeout(typeNextChar, 18 + Math.random() * 12);
         } else {
-          DOM.terminalInput.disabled = false;
-          const val = DOM.terminalInput.value;
-          DOM.terminalInput.value = "";
+          if (term) {
+            term.write("\r\n");
+          }
+          const val = termInputBuffer;
+          termInputBuffer = "";
           
           if (State.terminalIsInteractive) {
-            this.writeTerminalHtmlLine(`<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;${UIManager.escapeHTML(val)}`);
             if (State.activePromptCallback) {
               const cb = State.activePromptCallback;
               State.terminalIsInteractive = false;
@@ -878,7 +919,7 @@ document.addEventListener("DOMContentLoaded", () => {
               cb(val);
             }
           } else {
-            this.executeShellCommand(val);
+            this.executeShellCommand(val, true);
           }
           
           if (callback) {
@@ -1080,21 +1121,27 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     },
 
-    executeShellCommand(cmdString) {
+    executeShellCommand(cmdString, skipPrintingPromptLine = false) {
       const rawCmd = cmdString.trim();
       if (rawCmd) {
         State.commandHistory.push(rawCmd);
       }
       State.historyIndex = -1;
 
-      this.writeTerminalHtmlLine(`<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;${UIManager.escapeHTML(rawCmd)}`);
+      if (!skipPrintingPromptLine) {
+        this.writeTerminalHtmlLine(`<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;${UIManager.escapeHTML(rawCmd)}`);
+      }
 
-      if (!rawCmd) return;
+      if (!rawCmd) {
+        this.showPrompt();
+        return;
+      }
 
       if (rawCmd.startsWith("./")) {
         const binaryName = rawCmd.substring(2).trim();
         if (State.virtualFS[binaryName] === undefined) {
           this.writeTerminalTextLine(`bash: ./${binaryName}: No such file or directory (did you compile it?)`);
+          this.showPrompt();
           return;
         }
         
@@ -1110,7 +1157,7 @@ document.addEventListener("DOMContentLoaded", () => {
           compiler.runSimulation(compileId, codeToRun, {
             writeLine: (text) => this.writeTerminalTextLine(text),
             prompt: (lbl, cb) => {
-              this.writeTerminalTextLine(lbl);
+              if (term) term.write(lbl);
               State.activePromptCallback = cb;
               State.terminalIsInteractive = true;
             }
@@ -1119,6 +1166,7 @@ document.addEventListener("DOMContentLoaded", () => {
             State.activePromptCallback = null;
             this.writeTerminalTextLine("Process exited with code 0.");
             this.writeTerminalTextLine("");
+            this.showPrompt();
           });
         }, 400);
         return;
@@ -1131,7 +1179,10 @@ document.addEventListener("DOMContentLoaded", () => {
         parts.push(match[1] !== undefined ? match[1] : (match[2] !== undefined ? match[2] : match[0]));
       }
       
-      if (parts.length === 0) return;
+      if (parts.length === 0) {
+        this.showPrompt();
+        return;
+      }
       const command = parts[0].toLowerCase();
       const args = parts.slice(1);
 
@@ -1140,6 +1191,8 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         this.writeTerminalTextLine(`bash: ${command}: command not found. Type 'help' to review commands.`);
       }
+      
+      this.showPrompt();
     }
   };
 
@@ -1172,45 +1225,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       });
 
-      // Terminal focus on click
-      if (DOM.terminalShell) {
-        DOM.terminalShell.addEventListener("click", () => DOM.terminalInput.focus());
-      }
 
-      // Terminal key listener
-      DOM.terminalInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          const val = DOM.terminalInput.value;
-          DOM.terminalInput.value = "";
-          
-          if (State.terminalIsInteractive) {
-            Terminal.writeTerminalHtmlLine(`<span class="prompt-user">${State.terminalUsername}@${State.terminalHostname}</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;${UIManager.escapeHTML(val)}`);
-            if (State.activePromptCallback) {
-              const cb = State.activePromptCallback;
-              State.terminalIsInteractive = false;
-              State.activePromptCallback = null;
-              cb(val);
-            }
-          } else {
-            Terminal.executeShellCommand(val);
-          }
-        } else if (e.key === "ArrowUp") {
-          e.preventDefault();
-          if (State.commandHistory.length > 0 && State.historyIndex < State.commandHistory.length - 1) {
-            State.historyIndex++;
-            DOM.terminalInput.value = State.commandHistory[State.commandHistory.length - 1 - State.historyIndex];
-          }
-        } else if (e.key === "ArrowDown") {
-          e.preventDefault();
-          if (State.historyIndex > 0) {
-            State.historyIndex--;
-            DOM.terminalInput.value = State.commandHistory[State.commandHistory.length - 1 - State.historyIndex];
-          } else if (State.historyIndex === 0) {
-            State.historyIndex = -1;
-            DOM.terminalInput.value = "";
-          }
-        }
-      });
 
       // Floating jump to code
       if (DOM.floatingCodeBtn && DOM.docCodeWrapper) {
@@ -1428,6 +1443,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const isLight = document.body.classList.contains("light-theme");
         localStorage.setItem("theme", isLight ? "light" : "dark");
         this.updateThemeIcon();
+        Terminal.updateTheme();
       });
 
       // Compatibility elements triggers (Automated tests click proxies)
@@ -1466,15 +1482,114 @@ document.addEventListener("DOMContentLoaded", () => {
       // 1. Setup marked headings slugifier
       UIManager.setupMarkedRenderer();
       
-      // 2. Initialize terminal prompts
-      Terminal.updatePromptLabel();
-
-      // 3. Load user theme settings
+      // 2. Load user theme settings
       const savedTheme = localStorage.getItem("theme") || "dark";
       if (savedTheme === "light") {
         document.body.classList.add("light-theme");
       }
       this.updateThemeIcon();
+
+      // 3. Initialize xterm.js
+      if (DOM.terminalContainer) {
+        const isLight = document.body.classList.contains("light-theme");
+        term = new window.Terminal({
+          cursorBlink: true,
+          theme: {
+            background: isLight ? '#ffffff' : '#09090b',
+            foreground: isLight ? '#0f172a' : '#a1a1aa',
+            cursor: isLight ? '#0f172a' : '#c084fc',
+            selectionBackground: isLight ? 'rgba(15, 23, 42, 0.15)' : 'rgba(192, 132, 252, 0.25)',
+          },
+          fontFamily: 'Fira Code, monospace',
+          fontSize: 13,
+          letterSpacing: 0.5,
+          cursorStyle: 'underline',
+        });
+        
+        fitAddon = new window.FitAddon.FitAddon();
+        term.loadAddon(fitAddon);
+        
+        term.open(DOM.terminalContainer);
+        try { fitAddon.fit(); } catch(e) {}
+        
+        term.write("os-uce — Linux Terminal Simulator\r\n");
+        term.write("Type 'help' to see available commands.\r\n\r\n");
+        Terminal.showPrompt();
+
+        term.onKey(e => {
+          const ev = e.domEvent;
+          const key = e.key;
+          
+          if (State.terminalIsInteractive && !State.activePromptCallback) {
+            return;
+          }
+          
+          if (ev.keyCode === 13) { // Enter
+            term.write("\r\n");
+            const cmd = termInputBuffer;
+            termInputBuffer = "";
+            
+            if (State.terminalIsInteractive && State.activePromptCallback) {
+              const cb = State.activePromptCallback;
+              State.terminalIsInteractive = false;
+              State.activePromptCallback = null;
+              cb(cmd);
+            } else {
+              Terminal.executeShellCommand(cmd, true);
+            }
+          } else if (ev.keyCode === 8) { // Backspace
+            if (termInputBuffer.length > 0) {
+              termInputBuffer = termInputBuffer.slice(0, -1);
+              term.write("\b \b");
+            }
+          } else if (ev.keyCode === 38) { // Up Arrow (History)
+            if (State.terminalIsInteractive) return;
+            if (State.commandHistory.length > 0) {
+              if (State.historyIndex === -1) {
+                State.historyIndex = State.commandHistory.length - 1;
+              } else if (State.historyIndex > 0) {
+                State.historyIndex--;
+              }
+              for (let i = 0; i < termInputBuffer.length; i++) {
+                term.write("\b \b");
+              }
+              termInputBuffer = State.commandHistory[State.historyIndex];
+              term.write(termInputBuffer);
+            }
+          } else if (ev.keyCode === 40) { // Down Arrow (History)
+            if (State.terminalIsInteractive) return;
+            if (State.historyIndex !== -1) {
+              if (State.historyIndex < State.commandHistory.length - 1) {
+                State.historyIndex++;
+                for (let i = 0; i < termInputBuffer.length; i++) {
+                  term.write("\b \b");
+                }
+                termInputBuffer = State.commandHistory[State.historyIndex];
+                term.write(termInputBuffer);
+              } else {
+                State.historyIndex = -1;
+                for (let i = 0; i < termInputBuffer.length; i++) {
+                  term.write("\b \b");
+                }
+                termInputBuffer = "";
+              }
+            }
+          } else if (ev.keyCode >= 37 && ev.keyCode <= 40) {
+            // Ignore other arrows
+          } else {
+            if (key.length === 1 && ev.keyCode !== 9 && ev.keyCode !== 27) {
+              termInputBuffer += key;
+              term.write(key);
+            }
+          }
+        });
+      }
+
+      window.addEventListener("resize", () => {
+        if (fitAddon) {
+          try { fitAddon.fit(); } catch(e) {}
+        }
+      });
 
       // 4. Load panel collapse state
       const isCollapsed = localStorage.getItem("workspace_collapsed") === "true";

@@ -942,6 +942,26 @@ body.light-theme .terminal-input {
 
 body.light-theme .terminal-prompt { color: var(--accent); }
 
+#terminal-container {
+  background: #09090b;
+  transition: background 0.15s ease;
+}
+
+body.light-theme #terminal-container {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.xterm {
+  padding: 0;
+  height: 100%;
+}
+
+.xterm .xterm-viewport {
+  background-color: transparent !important;
+}
+
 /* Gedit Window */
 .gedit-window {
   flex: 1;
