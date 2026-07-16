@@ -392,7 +392,18 @@ const compiler = {
           terminal.writeLine("Threads joined successfully.");
         } else {
           terminal.writeLine("- Code contains standard main entry point.");
-          terminal.writeLine("Program executed successfully with exit code 0.");
+          const printfRegex = /printf\s*\(\s*"(.*?)"\s*(?:,\s*.*?)?\)/g;
+          let match;
+          let printed = false;
+          while ((match = printfRegex.exec(code)) !== null) {
+            let outputText = match[1];
+            outputText = outputText.replace(/\\n/g, "").replace(/\\t/g, "    ");
+            terminal.writeLine(outputText);
+            printed = true;
+          }
+          if (!printed) {
+            terminal.writeLine("Program executed successfully with exit code 0.");
+          }
         }
         terminal.writeLine("");
         onFinish();
