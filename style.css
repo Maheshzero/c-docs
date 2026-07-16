@@ -1534,10 +1534,15 @@ body.light-theme .theme-toggle-btn:hover {
   }
 
   .app-shell {
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: auto;
     flex-direction: column;
-    height: 100vh;
-    padding-top: 50px;
-    padding-bottom: 0px;
+    padding: 0;
+    margin: 0;
   }
 
   .sidebar {
@@ -1569,8 +1574,13 @@ body.light-theme .theme-toggle-btn:hover {
   }
 
   .doc-panel {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     padding: 18px 16px 60px;
     border-right: none;
+    height: 100%;
+    box-sizing: border-box;
   }
 
   .doc-header-bar {
@@ -1692,6 +1702,33 @@ body.light-theme .doc-header-actions button:hover {
   background: var(--accent-bg);
   border-color: var(--accent);
   color: var(--accent);
+}
+
+#floating-code-btn {
+  background: var(--bg-2);
+  border: 1px solid var(--border-mid);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#floating-code-btn:hover {
+  background: var(--bg-3) !important;
+  color: var(--accent) !important;
+  border-color: var(--accent) !important;
+  transform: translateY(-1px);
+}
+
+#floating-code-btn:active {
+  transform: scale(0.96);
+}
+
+body.light-theme #floating-code-btn {
+  background: var(--bg-2);
+  border-color: var(--border-mid);
+  color: var(--text);
 }
 
 /* =============================================================
