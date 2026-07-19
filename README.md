@@ -1,39 +1,89 @@
-# os-uce — OS Lab Reference
+# OS Lab Reference Platform
 
-An interactive, responsive C documentation and Linux command-line terminal simulator designed for Operating Systems lab programs at the University College of Engineering (UCE), Kariavattom.
-
-> [!NOTE]
-> This entire web application interface, documentation dataset, and terminal simulation engine was fully generated via **Antigravity** (Google DeepMind's Advanced Agentic Coding AI).
+An interactive, responsive C documentation and Linux command-line terminal simulator designed for Operating Systems lab courses at the University College of Engineering (UCE).
 
 ---
 
-## Features
-- **Tabbed Gedit & Terminal Workspace**: Simulates the exact workspace of the lab exam, comprising an interactive Ubuntu Bash Shell and a custom Gedit Editor (with dirty tab status tracking and compile-time warnings).
-- **Interactive Compile & Run Buttons**: Allows quick compilation and execution shortcuts built directly into the terminal.
-- **Syllabus-Aligned Experiments (18 Topics)**:
-  - **System Calls**: Process creation (`fork`), loop execution, process overlay (`execv`), directory streaming (`opendir`/`readdir`), and metadata query (`stat`).
-  - **IPC**: Shared Memory, Message Queue Chat.
-  - **CPU Scheduling**: FCFS, SJF, Round Robin, and Priority Scheduling.
-  - **Memory Allocation**: First Fit, Best Fit, and Worst Fit algorithms.
-  - **Synchronization**: Producer-Consumer circular buffer.
-  - **Page Replacement**: FIFO and LRU.
-  - **Deadlock Avoidance**: Banker's safety algorithm.
+## Directory Structure
+
+This project conforms to the Universal Web Architecture layout:
+
+```
+├── config/
+│   ├── build.js            # Custom static build and compilation utility
+│   ├── wrangler.toml       # Cloudflare deployment configuration
+│   ├── wrangler.jsonc      # Development schema specification
+│   └── wrangler.secure.toml # Production secure deployment parameters
+├── public/
+│   ├── css2/               # Local font assets
+│   ├── lib/                # Static vendor libraries (xterm.js, xterm-addon-fit.js)
+│   ├── favicon.svg         # Site icon asset
+│   └── marked.min.js       # Markdown parser library
+├── src/
+│   ├── components/
+│   │   └── style.css       # Core layout and component styles
+│   ├── core/
+│   │   ├── app.js          # Terminal and interface controller logic
+│   │   ├── compiler.js     # Simulated C compiler and analyzer
+│   │   ├── data.js         # Syllabus topic definitions
+│   │   └── docs_content.js # Markdown documentation data source
+│   ├── middleware/
+│   │   └── _middleware.js  # Serverless edge function routing
+│   └── pages/
+│       ├── index.html      # Main application page
+│       └── docs/           # Individual syllabus reference files
+├── dist/                   # Compiled production-ready distribution (build target)
+├── package.json            # Node project configuration and script definitions
+└── verify_project.js       # Automated validation script
+```
 
 ---
 
-## Deployment & Production Build
+## Local Development
 
-This repository is optimized for deployment on **Cloudflare Pages**. 
+Follow these steps to set up and preview the project locally:
 
-### 1. Security Headers and Rate Limiting
-A custom serverless function middleware is provided at `functions/_middleware.js`. It runs in the Cloudflare Page environment to secure the application:
-- **Bot Blocking**: Restricts automated scrape bots (curl, wget, selenium, scrapy, playwright).
-- **IP-Based Token Bucket Rate Limiting**: Limit of 60 requests per minute per IP address with rotating salts to ensure anonymity.
-- **CSP Hardening**: Inject security headers (`Content-Security-Policy`, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`) to secure code inputs.
-- **Header Anonymization**: Scrubs infrastructure disclosure headers (`Server`, `CF-Ray`, `X-Powered-By`).
+### 1. Installation
+Install the required development tools and dependencies:
+```bash
+npm install
+```
 
-### 2. Static Deploy Steps
-1. Push the main branch to GitHub.
-2. Link your GitHub repository to Cloudflare Pages.
-3. Keep the **Build Command** blank, and set the **Build Directory** as the root directory `./` (pure HTML/CSS/JS frontend).
-4. Cloudflare will automatically build, apply the functions middleware, and deploy the application.
+### 2. Build Generation
+Compile, clean, and bundle the assets into the distribution directory (`/dist`):
+```bash
+npm run build
+```
+This utility removes comments, handles whitespace compression, and copies resources from the development folders into the distribution package.
+
+### 3. Local Preview
+Start the local HTTP preview server:
+```bash
+npm run dev
+```
+Navigate to `http://localhost:8000` in your browser to inspect the application.
+
+### 4. Code Validation
+Run the test suite to verify script ordering, syntax cleanliness, and structural alignment:
+```bash
+node verify_project.js
+```
+
+---
+
+## Production Deployment
+
+This project is configured to deploy as a static site via Cloudflare Pages or Cloudflare Workers Assets.
+
+### 1. Build Verification
+Ensure the distribution folder is populated with clean assets by running:
+```bash
+npm run build
+```
+
+### 2. Deployment Command
+Deploy to Cloudflare using the Wrangler CLI:
+```bash
+npm run deploy
+```
+Wrangler will load the configuration from `config/wrangler.toml` and synchronize the `./dist` directory contents directly to the edge network.
