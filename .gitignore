@@ -51,3 +51,8 @@ wrangler.jsonc.backup
 coverage/
 .nyc_output/
 
+# Hide Agent Orchestration Frameworks
+.clinerules
+.agents/
+theta.toml
+.cline/
