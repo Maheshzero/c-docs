@@ -10,6 +10,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="lib/xterm.css" />
+  <script src="lib/xterm.js"></script>
+  <script src="lib/xterm-addon-fit.js"></script>
 </head>
 <body>
 
@@ -108,17 +111,7 @@
 
           <!-- Terminal View -->
           <div id="view-terminal" class="workspace-view active">
-            <div class="terminal-shell" id="terminal-shell">
-              <div id="terminal-lines" class="terminal-lines-content">
-                <div class="terminal-line">os-uce — Linux Terminal Simulator</div>
-                <div class="terminal-line">Type 'help' to see available commands.</div>
-                <div class="terminal-line"></div>
-              </div>
-              <div class="terminal-input-line">
-                <span id="terminal-prompt-label" class="terminal-prompt"><span class="prompt-user">guest@uce</span>:<span class="prompt-dir">~/os_lab</span>$&nbsp;</span>
-                <input id="terminal-input" class="terminal-input" type="text" autocomplete="off" spellcheck="false" aria-label="Terminal Input" />
-              </div>
-            </div>
+            <div id="terminal-container" style="width: 100%; height: 100%; overflow: hidden; box-sizing: border-box; padding: 12px 14px;"></div>
           </div>
 
           <!-- Gedit View -->
