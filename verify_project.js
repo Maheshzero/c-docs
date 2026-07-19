@@ -25,7 +25,7 @@ const projectDir = '/home/mahesh-s/Downloads/c-docs-app';
 
 // 1. JavaScript Syntax Check
 try {
-  execSync(`node -c ${projectDir}/src/core/app.js ${projectDir}/src/core/compiler.js ${projectDir}/src/core/data.js ${projectDir}/src/core/docs_content.js`);
+  execSync(`node -c ${projectDir}/src/core/app.js ${projectDir}/src/core/compiler.js ${projectDir}/src/core/data.js`);
   report('JavaScript Syntax Checks', true, 'All JS files parsed and compiled with zero syntax errors.');
 } catch (error) {
   report('JavaScript Syntax Checks', false, error.message);
@@ -37,17 +37,16 @@ try {
   
   const markedIdx = indexHtml.indexOf('src="marked.min.js"');
   const dataIdx = indexHtml.indexOf('src="data.js"') !== -1 ? indexHtml.indexOf('src="data.js"') : indexHtml.indexOf('src="data.min.js"');
-  const docsContentIdx = indexHtml.indexOf('src="docs_content.js"') !== -1 ? indexHtml.indexOf('src="docs_content.js"') : indexHtml.indexOf('src="docs_content.min.js"');
   const compilerIdx = indexHtml.indexOf('src="compiler.js"') !== -1 ? indexHtml.indexOf('src="compiler.js"') : indexHtml.indexOf('src="compiler.min.js"');
   const appIdx = indexHtml.indexOf('src="app.js"') !== -1 ? indexHtml.indexOf('src="app.js"') : indexHtml.indexOf('src="app.min.js"');
 
-  const loaded = markedIdx !== -1 && dataIdx !== -1 && docsContentIdx !== -1 && compilerIdx !== -1 && appIdx !== -1;
-  const orderCorrect = markedIdx < dataIdx && dataIdx < docsContentIdx && docsContentIdx < compilerIdx && compilerIdx < appIdx;
+  const loaded = markedIdx !== -1 && dataIdx !== -1 && compilerIdx !== -1 && appIdx !== -1;
+  const orderCorrect = markedIdx < dataIdx && dataIdx < compilerIdx && compilerIdx < appIdx;
 
   if (loaded && orderCorrect) {
-    report('HTML Script Loading Order', true, 'Scripts loaded in correct sequence: marked -> data -> docs_content -> compiler -> app.');
+    report('HTML Script Loading Order', true, 'Scripts loaded in correct sequence: marked -> data -> compiler -> app.');
   } else {
-    report('HTML Script Loading Order', false, `Script tags missing or loaded in incorrect order (marked: ${markedIdx}, data: ${dataIdx}, docs: ${docsContentIdx}, compiler: ${compilerIdx}, app: ${appIdx})`);
+    report('HTML Script Loading Order', false, `Script tags missing or loaded in incorrect order (marked: ${markedIdx}, data: ${dataIdx}, compiler: ${compilerIdx}, app: ${appIdx})`);
   }
 } catch (error) {
   report('HTML Script Loading Order', false, error.message);
@@ -101,19 +100,30 @@ try {
   report('CSS Typography & Layout Checks', false, error.message);
 }
 
-// 5. No Emoji Check in docs_content.js
+// 5. No Emoji Check in docs markdown files
 try {
-  const docsContent = fs.readFileSync(`${projectDir}/src/core/docs_content.js`, 'utf8');
+  const docsDir = `${projectDir}/src/pages/docs`;
+  const docFiles = fs.readdirSync(docsDir).filter(f => f.endsWith('.md'));
+  
+  let matchFound = false;
+  let allMatches = [];
   
   // Regex for emojis and variation selectors
   const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{26a0}\u{27a1}\u{2192}\u{2699}\u{25b6}\u{263c}]/gu;
   
-  const match = docsContent.match(emojiRegex);
+  docFiles.forEach(file => {
+    const content = fs.readFileSync(`${docsDir}/${file}`, 'utf8');
+    const match = content.match(emojiRegex);
+    if (match) {
+      matchFound = true;
+      allMatches.push(...match);
+    }
+  });
   
-  if (!match) {
-    report('Documentation Emoji Filtering', true, 'No emojis found in any syllabus topics, student guide, or C syntax glossary.');
+  if (!matchFound) {
+    report('Documentation Emoji Filtering', true, 'No emojis found in any syllabus topics or C syntax glossary.');
   } else {
-    report('Documentation Emoji Filtering', false, `Found remaining emojis in docs_content.js: ${[...new Set(match)].join(', ')}`);
+    report('Documentation Emoji Filtering', false, `Found remaining emojis in markdown files: ${[...new Set(allMatches)].join(', ')}`);
   }
 } catch (error) {
   report('Documentation Emoji Filtering', false, error.message);

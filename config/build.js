@@ -85,7 +85,6 @@ console.log('🎨 Compiled style.css (comment-free)');
 compileJS(path.join(projectDir, 'src/core/app.js'), path.join(distDir, 'app.min.js'));
 compileJS(path.join(projectDir, 'src/core/compiler.js'), path.join(distDir, 'compiler.min.js'));
 compileJS(path.join(projectDir, 'src/core/data.js'), path.join(distDir, 'data.min.js'));
-compileJS(path.join(projectDir, 'src/core/docs_content.js'), path.join(distDir, 'docs_content.min.js'));
 console.log('⚡ Compiled core JS files to minified versions (comment-free)');
 
 console.log('✅ Build successful! All clean assets stored in dist/');

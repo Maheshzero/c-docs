@@ -450,168 +450,175 @@ document.addEventListener("DOMContentLoaded", () => {
       const docMdContainer = document.getElementById("doc-markdown-content");
       docMdContainer.innerHTML = `<div class="doc-loading">Loading documentation...</div>`;
       
-      let markdownText = docsContent[topicId] || "";
-      if (markdownText) {
-        markdownText = markdownText.replace(/^#\s+.+$/m, "");
-
-        let renderedHtml = "";
-        if (window.marked && window.marked.parse) {
-          renderedHtml = window.marked.parse(markdownText);
-        } else {
-          renderedHtml = `<pre style="white-space: pre-wrap;">${this.escapeHTML(markdownText)}</pre>`;
-        }
-        
-        const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = renderedHtml;
-        
-        const finalWrapper = document.createElement("div");
-        finalWrapper.className = "doc-sections-wrapper";
-
-        function cardTypeFromHeading(text) {
-          const t = text.toLowerCase();
-          if (t.includes("what is") || t.startsWith("what")) return "card-what";
-          if (t.includes("where") || t.includes("fit")) return "card-where";
-          if (t.includes("algorithm") || t.includes("how does") || t.includes("plain steps")) return "card-how";
-          if (t.includes("why c") || t.includes("why does c") || t.includes("different")) return "card-why";
-          if (t.includes("implementation") || t.includes("compile") || t.includes("guide")) return "card-impl";
-          if (t.includes("reference") || t.includes("documentation") || t.includes("official")) return "card-ref";
-          return "card-default";
-        }
-        
-        let currentCard = null;
-        Array.from(tempDiv.children).forEach(child => {
-          if (child.tagName === 'H2' || child.tagName === 'H1') {
-            currentCard = document.createElement("div");
-            const typeClass = cardTypeFromHeading(child.textContent || "");
-            currentCard.className = `doc-section-card ${typeClass}`;
-            if (child.id) currentCard.id = `section-${child.id}`;
-            finalWrapper.appendChild(currentCard);
+      fetch(`docs/${topicId}.md`)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to load documentation for ${topicId}`);
           }
-          if (currentCard) {
-            currentCard.appendChild(child);
+          return response.text();
+        })
+        .then(markdownText => {
+          markdownText = markdownText.replace(/^#\s+.+$/m, "");
+
+          let renderedHtml = "";
+          if (window.marked && window.marked.parse) {
+            renderedHtml = window.marked.parse(markdownText);
           } else {
-            const introCard = document.createElement("div");
-            introCard.className = "doc-section-card card-what";
-            introCard.appendChild(child);
-            finalWrapper.appendChild(introCard);
-            currentCard = introCard;
+            renderedHtml = `<pre style="white-space: pre-wrap;">${this.escapeHTML(markdownText)}</pre>`;
           }
-        });
+          
+          const tempDiv = document.createElement("div");
+          tempDiv.innerHTML = renderedHtml;
+          
+          const finalWrapper = document.createElement("div");
+          finalWrapper.className = "doc-sections-wrapper";
 
-        // Inject cross-topic links
-        const links = Config.topicCrossLinks[topicId] || [];
-        if (links.length > 0) {
-          const walker = document.createTreeWalker(
-            finalWrapper,
-            NodeFilter.SHOW_TEXT,
-            {
-              acceptNode(node) {
-                let p = node.parentElement;
-                while (p && p !== finalWrapper) {
-                  const tag = p.tagName.toUpperCase();
-                  if (tag === 'CODE' || tag === 'PRE' || tag === 'A') return NodeFilter.FILTER_REJECT;
-                  p = p.parentElement;
+          function cardTypeFromHeading(text) {
+            const t = text.toLowerCase();
+            if (t.includes("what is") || t.startsWith("what")) return "card-what";
+            if (t.includes("where") || t.includes("fit")) return "card-where";
+            if (t.includes("algorithm") || t.includes("how does") || t.includes("plain steps")) return "card-how";
+            if (t.includes("why c") || t.includes("why does c") || t.includes("different")) return "card-why";
+            if (t.includes("implementation") || t.includes("compile") || t.includes("guide")) return "card-impl";
+            if (t.includes("reference") || t.includes("documentation") || t.includes("official")) return "card-ref";
+            return "card-default";
+          }
+          
+          let currentCard = null;
+          Array.from(tempDiv.children).forEach(child => {
+            if (child.tagName === 'H2' || child.tagName === 'H1') {
+              currentCard = document.createElement("div");
+              const typeClass = cardTypeFromHeading(child.textContent || "");
+              currentCard.className = `doc-section-card ${typeClass}`;
+              if (child.id) currentCard.id = `section-${child.id}`;
+              finalWrapper.appendChild(currentCard);
+            }
+            if (currentCard) {
+              currentCard.appendChild(child);
+            } else {
+              const introCard = document.createElement("div");
+              introCard.className = "doc-section-card card-what";
+              introCard.appendChild(child);
+              finalWrapper.appendChild(introCard);
+              currentCard = introCard;
+            }
+          });
+
+          // Inject cross-topic links
+          const links = Config.topicCrossLinks[topicId] || [];
+          if (links.length > 0) {
+            const walker = document.createTreeWalker(
+              finalWrapper,
+              NodeFilter.SHOW_TEXT,
+              {
+                acceptNode(node) {
+                  let p = node.parentElement;
+                  while (p && p !== finalWrapper) {
+                    const tag = p.tagName.toUpperCase();
+                    if (tag === 'CODE' || tag === 'PRE' || tag === 'A') return NodeFilter.FILTER_REJECT;
+                    p = p.parentElement;
+                  }
+                  return NodeFilter.FILTER_ACCEPT;
                 }
-                return NodeFilter.FILTER_ACCEPT;
               }
-            }
-          );
+            );
 
-          const textNodes = [];
-          let n;
-          while ((n = walker.nextNode())) textNodes.push(n);
+            const textNodes = [];
+            let n;
+            while ((n = walker.nextNode())) textNodes.push(n);
 
-          const sortedLinks = [...links].sort((a, b) => b.phrase.length - a.phrase.length);
-          const escapedPhrases = sortedLinks.map(l =>
-            l.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-          );
-          const re = new RegExp(`(${escapedPhrases.join('|')})`, 'g');
+            const sortedLinks = [...links].sort((a, b) => b.phrase.length - a.phrase.length);
+            const escapedPhrases = sortedLinks.map(l =>
+              l.phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+            );
+            const re = new RegExp(`(${escapedPhrases.join('|')})`, 'g');
 
-          textNodes.forEach(textNode => {
-            const orig = textNode.nodeValue;
-            if (!re.test(orig)) return;
-            re.lastIndex = 0;
+            textNodes.forEach(textNode => {
+              const orig = textNode.nodeValue;
+              if (!re.test(orig)) return;
+              re.lastIndex = 0;
 
-            const frag = document.createDocumentFragment();
-            let lastIdx = 0;
-            let m;
-            re.lastIndex = 0;
-            while ((m = re.exec(orig)) !== null) {
-              if (m.index > lastIdx) {
-                frag.appendChild(document.createTextNode(orig.slice(lastIdx, m.index)));
+              const frag = document.createDocumentFragment();
+              let lastIdx = 0;
+              let m;
+              re.lastIndex = 0;
+              while ((m = re.exec(orig)) !== null) {
+                if (m.index > lastIdx) {
+                  frag.appendChild(document.createTextNode(orig.slice(lastIdx, m.index)));
+                }
+                const matchedPhrase = m[0];
+                const linkDef = sortedLinks.find(l => l.phrase === matchedPhrase);
+                if (linkDef) {
+                  const a = document.createElement("a");
+                  a.className = "doc-crosslink";
+                  a.textContent = matchedPhrase;
+                  a.dataset.topicTarget = linkDef.target;
+                  a.title = `Go to: ${linkDef.target.replace(/-/g, ' ')}`;
+                  frag.appendChild(a);
+                } else {
+                  frag.appendChild(document.createTextNode(matchedPhrase));
+                }
+                lastIdx = m.index + m[0].length;
               }
-              const matchedPhrase = m[0];
-              const linkDef = sortedLinks.find(l => l.phrase === matchedPhrase);
-              if (linkDef) {
-                const a = document.createElement("a");
-                a.className = "doc-crosslink";
-                a.textContent = matchedPhrase;
-                a.dataset.topicTarget = linkDef.target;
-                a.title = `Go to: ${linkDef.target.replace(/-/g, ' ')}`;
-                frag.appendChild(a);
-              } else {
-                frag.appendChild(document.createTextNode(matchedPhrase));
+              if (lastIdx < orig.length) {
+                frag.appendChild(document.createTextNode(orig.slice(lastIdx)));
               }
-              lastIdx = m.index + m[0].length;
+              textNode.parentNode.replaceChild(frag, textNode);
+            });
+          }
+
+          // Inject syntax cross-links
+          finalWrapper.querySelectorAll("code").forEach(codeEl => {
+            if (codeEl.closest("pre")) return;
+            const text = codeEl.textContent.trim();
+            const match = Config.syntaxCrossLinks.find(s => text === s.token);
+            if (match) {
+              const a = document.createElement("a");
+              a.className = "syntax-crosslink";
+              a.textContent = text;
+              a.dataset.syntaxCard = match.cardId;
+              a.title = `View syntax: ${text}`;
+              codeEl.parentNode.replaceChild(a, codeEl);
             }
-            if (lastIdx < orig.length) {
-              frag.appendChild(document.createTextNode(orig.slice(lastIdx)));
-            }
-            textNode.parentNode.replaceChild(frag, textNode);
           });
-        }
 
-        // Inject syntax cross-links
-        finalWrapper.querySelectorAll("code").forEach(codeEl => {
-          if (codeEl.closest("pre")) return;
-          const text = codeEl.textContent.trim();
-          const match = Config.syntaxCrossLinks.find(s => text === s.token);
-          if (match) {
-            const a = document.createElement("a");
-            a.className = "syntax-crosslink";
-            a.textContent = text;
-            a.dataset.syntaxCard = match.cardId;
-            a.title = `View syntax: ${text}`;
-            codeEl.parentNode.replaceChild(a, codeEl);
+          // Append Related Topics Bar to bottom of doc-body
+          const related = Config.relatedTopicsMap[topicId];
+          if (related && related.length > 0) {
+            const bar = document.createElement("div");
+            bar.className = "related-topics-bar";
+            const label = document.createElement("span");
+            label.className = "related-topics-label";
+            label.textContent = "See also";
+            bar.appendChild(label);
+
+            related.forEach(rel => {
+              const chip = document.createElement("button");
+              chip.className = "topic-chip";
+              chip.textContent = rel.label;
+              chip.dataset.topicTarget = rel.id;
+              chip.title = `Navigate to ${rel.label}`;
+              bar.appendChild(chip);
+            });
+            finalWrapper.appendChild(bar);
+          }
+          
+          docMdContainer.innerHTML = "";
+          docMdContainer.appendChild(finalWrapper);
+        })
+        .catch(err => {
+          const matchingTopic = topicsData.find(t => t.id === topicId);
+          if (matchingTopic) {
+            docMdContainer.innerHTML = `
+              <div class="doc-section-card">
+                <h2>Overview</h2>
+                <p>${this.escapeHTML(matchingTopic.description)}</p>
+              </div>
+            `;
+          } else {
+            docMdContainer.innerHTML = `<div class="doc-loading">No documentation content found.</div>`;
           }
         });
-
-        // Append Related Topics Bar to bottom of doc-body
-        const related = Config.relatedTopicsMap[topicId];
-        if (related && related.length > 0) {
-          const bar = document.createElement("div");
-          bar.className = "related-topics-bar";
-          const label = document.createElement("span");
-          label.className = "related-topics-label";
-          label.textContent = "See also";
-          bar.appendChild(label);
-
-          related.forEach(rel => {
-            const chip = document.createElement("button");
-            chip.className = "topic-chip";
-            chip.textContent = rel.label;
-            chip.dataset.topicTarget = rel.id;
-            chip.title = `Navigate to ${rel.label}`;
-            bar.appendChild(chip);
-          });
-          finalWrapper.appendChild(bar);
-        }
-        
-        docMdContainer.innerHTML = "";
-        docMdContainer.appendChild(finalWrapper);
-      } else {
-        const matchingTopic = topicsData.find(t => t.id === topicId);
-        if (matchingTopic) {
-          docMdContainer.innerHTML = `
-            <div class="doc-section-card">
-              <h2>Overview</h2>
-              <p>${this.escapeHTML(matchingTopic.description)}</p>
-            </div>
-          `;
-        } else {
-          docMdContainer.innerHTML = `<div class="doc-loading">No documentation content found.</div>`;
-        }
-      }
     },
 
     selectTopic(topicId, restoreScrollTop) {
