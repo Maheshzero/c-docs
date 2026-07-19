@@ -16,8 +16,7 @@
     "obfuscation"
   ],
   "author": "Anonymous",
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
   "devDependencies": {
     "wrangler": "^4.111.0"
   },
