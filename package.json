@@ -4,13 +4,9 @@
   "description": "Secure OS Lab Reference Platform on Cloudflare Workers",
   "type": "module",
   "scripts": {
-    "build": "mkdir -p dist && cp index.html style.css favicon.svg dist/ || true && cp -rf css2 dist/css2 || true && cp -f app.js dist/app.min.js || true && cp -f compiler.js dist/compiler.min.js || true && cp -f data.js dist/data.min.js || true && cp -f docs_content.js dist/docs_content.min.js || true && cp -f marked.min.js dist/marked.min.js || true",
-    "build:watch": "echo \"build:watch disabled (no obfuscation)\"",
-    "deploy": "npm run build && wrangler deploy --env production",
-    "dev": "wrangler dev",
-    "test": "node -c app.js && node -c compiler.js && echo '✅ All JS files valid'",
-    "lint": "eslint . --ext .js",
-    "serve:static": "python3 -m http.server 8000 --directory dist"
+    "build": "node config/build.js",
+    "dev": "python3 -m http.server 8000 --directory dist",
+    "deploy": "npm run build && wrangler deploy"
   },
   "keywords": [
     "os-lab",

@@ -637,8 +637,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         this.fetchAndRenderMarkdown(topicId);
-        DOM.docCodeWrapper.style.display = "none";
-        DOM.floatingCodeBtn.style.display = "none";
+        DOM.docCodeWrapper.classList.add("hidden");
+        DOM.floatingCodeBtn.classList.add("hidden");
       } else {
         const topic = topicsData.find(t => t.id === topicId);
         if (!topic) return;
@@ -652,8 +652,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         this.fetchAndRenderMarkdown(topicId);
-        DOM.docCodeWrapper.style.display = "block";
-        DOM.floatingCodeBtn.style.display = "flex";
+        DOM.docCodeWrapper.classList.remove("hidden");
+        DOM.floatingCodeBtn.classList.remove("hidden");
 
         const filename = State.getTopicFilename(topic);
         DOM.docCodeFilename.innerText = filename;
@@ -738,7 +738,7 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => DOM.terminalInput.focus(), 60);
       } else {
         if (DOM.workspaceTabGedit) {
-          DOM.workspaceTabGedit.style.display = "inline-block";
+          DOM.workspaceTabGedit.classList.remove("hidden");
         }
         DOM.workspaceTabTerminal.classList.remove("active");
         DOM.workspaceTabGedit.classList.add("active");
@@ -1006,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
         DOM.editorTextarea.value = State.virtualFS[State.activeFilename] || "";
         Editor.updateGeditFilenameTabState();
         if (DOM.workspaceTabGedit) {
-          DOM.workspaceTabGedit.style.display = "inline-block";
+          DOM.workspaceTabGedit.classList.remove("hidden");
         }
         UIManager.setWorkspaceTab("gedit");
         if (window.innerWidth <= 768) UIManager.setMobileTab("ide");
@@ -1398,7 +1398,7 @@ document.addEventListener("DOMContentLoaded", () => {
         geditTabClose.addEventListener("click", (e) => {
           e.stopPropagation();
           if (DOM.workspaceTabGedit) {
-            DOM.workspaceTabGedit.style.display = "none";
+            DOM.workspaceTabGedit.classList.add("hidden");
           }
           UIManager.setWorkspaceTab("terminal");
         });
@@ -1447,7 +1447,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Scroll observer to hide floating code button
       if (DOM.docPanel && DOM.floatingCodeBtn && DOM.docCodeWrapper) {
         DOM.docPanel.addEventListener("scroll", () => {
-          if (DOM.docCodeWrapper.style.display !== "none") {
+          if (!DOM.docCodeWrapper.classList.contains("hidden")) {
             const wrapperRect = DOM.docCodeWrapper.getBoundingClientRect();
             const panelRect = DOM.docPanel.getBoundingClientRect();
             if (wrapperRect.top < panelRect.bottom - 40) {

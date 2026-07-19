@@ -1,5 +1,5 @@
-const fs = require('fs');
-const { execSync } = require('child_process');
+import fs from 'fs';
+import { execSync } from 'child_process';
 
 console.log('============================================================');
 console.log('      os-uce REDESIGN AUTOMATED VERIFICATION REPORT         ');
@@ -25,7 +25,7 @@ const projectDir = '/home/mahesh-s/Downloads/c-docs-app';
 
 // 1. JavaScript Syntax Check
 try {
-  execSync(`node -c ${projectDir}/app.js ${projectDir}/compiler.js ${projectDir}/data.js ${projectDir}/docs_content.js`);
+  execSync(`node -c ${projectDir}/src/core/app.js ${projectDir}/src/core/compiler.js ${projectDir}/src/core/data.js ${projectDir}/src/core/docs_content.js`);
   report('JavaScript Syntax Checks', true, 'All JS files parsed and compiled with zero syntax errors.');
 } catch (error) {
   report('JavaScript Syntax Checks', false, error.message);
@@ -33,13 +33,13 @@ try {
 
 // 2. HTML Loading Order Check
 try {
-  const indexHtml = fs.readFileSync(`${projectDir}/index.html`, 'utf8');
+  const indexHtml = fs.readFileSync(`${projectDir}/src/pages/index.html`, 'utf8');
   
   const markedIdx = indexHtml.indexOf('src="marked.min.js"');
-  const dataIdx = indexHtml.indexOf('src="data.js"');
-  const docsContentIdx = indexHtml.indexOf('src="docs_content.js"');
-  const compilerIdx = indexHtml.indexOf('src="compiler.js"');
-  const appIdx = indexHtml.indexOf('src="app.js"');
+  const dataIdx = indexHtml.indexOf('src="data.js"') !== -1 ? indexHtml.indexOf('src="data.js"') : indexHtml.indexOf('src="data.min.js"');
+  const docsContentIdx = indexHtml.indexOf('src="docs_content.js"') !== -1 ? indexHtml.indexOf('src="docs_content.js"') : indexHtml.indexOf('src="docs_content.min.js"');
+  const compilerIdx = indexHtml.indexOf('src="compiler.js"') !== -1 ? indexHtml.indexOf('src="compiler.js"') : indexHtml.indexOf('src="compiler.min.js"');
+  const appIdx = indexHtml.indexOf('src="app.js"') !== -1 ? indexHtml.indexOf('src="app.js"') : indexHtml.indexOf('src="app.min.js"');
 
   const loaded = markedIdx !== -1 && dataIdx !== -1 && docsContentIdx !== -1 && compilerIdx !== -1 && appIdx !== -1;
   const orderCorrect = markedIdx < dataIdx && dataIdx < docsContentIdx && docsContentIdx < compilerIdx && compilerIdx < appIdx;
@@ -55,7 +55,7 @@ try {
 
 // 3. Variable Cleanliness Check
 try {
-  const appJs = fs.readFileSync(`${projectDir}/app.js`, 'utf8');
+  const appJs = fs.readFileSync(`${projectDir}/src/core/app.js`, 'utf8');
   const bannedPatterns = [
     { name: 'previousTopicId', regex: /\bpreviousTopicId\b/ },
     { name: 'previousScrollTop', regex: /\bpreviousScrollTop\b/ },
@@ -84,7 +84,7 @@ try {
 
 // 4. CSS Variable and Full-Height Panel Check
 try {
-  const styleCss = fs.readFileSync(`${projectDir}/style.css`, 'utf8');
+  const styleCss = fs.readFileSync(`${projectDir}/src/components/style.css`, 'utf8');
   
   const hasHeadingFont = styleCss.includes('--font-heading:') && styleCss.includes('Plus Jakarta Sans');
   const hasUiFont = styleCss.includes('--font-ui:') && styleCss.includes('Inter');
@@ -103,7 +103,7 @@ try {
 
 // 5. No Emoji Check in docs_content.js
 try {
-  const docsContent = fs.readFileSync(`${projectDir}/docs_content.js`, 'utf8');
+  const docsContent = fs.readFileSync(`${projectDir}/src/core/docs_content.js`, 'utf8');
   
   // Regex for emojis and variation selectors
   const emojiRegex = /[\u{1F300}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]|[\u{1F680}-\u{1F6FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{26a0}\u{27a1}\u{2192}\u{2699}\u{25b6}\u{263c}]/gu;

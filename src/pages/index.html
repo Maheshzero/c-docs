@@ -68,7 +68,7 @@
             <p id="doc-description" class="doc-description">Description goes here.</p>
           </div>
 
-          <div id="compatibility-alert" class="compat-alert" style="display:none;">
+          <div id="compatibility-alert" class="compat-alert hidden">
             <span class="alert-icon">!</span>
             <span id="warning-text"></span>
           </div>
@@ -79,7 +79,7 @@
             </div>
             
             <!-- Code Block wrapper -->
-            <div class="code-block-wrapper" id="doc-code-wrapper" style="margin-top: 32px;">
+            <div class="code-block-wrapper" id="doc-code-wrapper">
               <div class="code-block-header">
                 <span id="doc-code-filename" class="code-filename">filename.c</span>
                 <div class="code-block-actions">
@@ -102,7 +102,7 @@
           <div class="workspace-tabs-header">
             <div class="ws-tabs-group">
               <button id="workspace-tab-terminal" class="w-tab-btn active">Terminal</button>
-              <button id="workspace-tab-gedit" class="w-tab-btn" style="display: none;">Gedit Editor <span id="gedit-tab-close" class="tab-close-btn" style="margin-left: 6px; font-weight: bold; cursor: pointer;">&times;</span></button>
+              <button id="workspace-tab-gedit" class="w-tab-btn hidden">Gedit Editor <span id="gedit-tab-close" class="tab-close-btn">&times;</span></button>
             </div>
           </div>
 
@@ -143,7 +143,7 @@
   </div>
 
   <!-- Compatibility elements for automated tests (clicks are routed to the proper buttons) -->
-  <div style="display: none;">
+  <div class="hidden">
     <button id="ws-compile-btn"></button>
     <button id="ws-run-btn"></button>
   </div>

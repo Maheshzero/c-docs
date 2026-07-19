@@ -45,12 +45,6 @@ export default {
 
     pruneIpLimits();
 
-    const url = new URL(request.url);
-    const assetRequest =
-      url.pathname === "/"
-        ? new Request(new URL("/index.html", request.url), request)
-        : request;
-
     const assetsBinding =
       (env && env.ASSETS) ||
       (typeof ASSETS !== "undefined" ? ASSETS : undefined);
@@ -59,39 +53,7 @@ export default {
       return new Response("Static asset binding not available", { status: 500 });
     }
 
-    async function fetchAsset(pathname) {
-      const targetUrl = new URL(request.url);
-      targetUrl.pathname = pathname;
-      const req = new Request(targetUrl.toString(), request);
-      return assetsBinding.fetch(req);
-    }
-
-    const assetPath = assetRequest.url ? new URL(assetRequest.url).pathname : url.pathname;
-    const candidates = [];
-    if (assetPath === "/") {
-      candidates.push("/index.html", "/dist/index.html", "/dist/dist/index.html");
-    } else {
-      candidates.push(assetPath);
-      if (!assetPath.startsWith("/dist/")) {
-        candidates.push(`/dist${assetPath}`);
-      }
-      if (assetPath.startsWith("/dist/")) {
-        candidates.push(assetPath.replace(/^\/dist\//, "/"));
-      }
-      if (!assetPath.startsWith("/dist/dist/")) {
-        candidates.push(`/dist/dist${assetPath}`);
-      }
-    }
-
-    let response;
-    for (const candidate of candidates) {
-      response = await fetchAsset(candidate);
-      if (response.status !== 404) break;
-    }
-
-    if (!response) {
-      return new Response("Asset fetch failed", { status: 500 });
-    }
+    const response = await assetsBinding.fetch(request);
 
     const hasNoBody =
       response.status === 204 ||
@@ -99,7 +61,7 @@ export default {
       (response.status >= 300 && response.status < 400);
     const body = hasNoBody ? null : response.body;
     const headers = new Headers(response.headers);
-    const pathnameToUse = new URL(response.url).pathname;
+    const pathnameToUse = response.url ? new URL(response.url).pathname : new URL(request.url).pathname;
     const contentType = headers.get("content-type");
     if (!contentType || !contentType.trim()) {
       if (pathnameToUse.endsWith(".js")) {
