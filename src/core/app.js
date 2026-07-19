@@ -405,7 +405,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       menuHTML += `
         <div class="menu-category">Help &amp; Reference</div>
-        <a href="#" class="menu-item ${State.activeTopicId === 'help-guide' ? 'active' : ''}" data-id="help-guide">Student Guide</a>
         <a href="#" class="menu-item ${State.activeTopicId === 'c-syntaxes' ? 'active' : ''}" data-id="c-syntaxes">C Syntaxes</a>
       `;
 
@@ -626,15 +625,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      const isHelpFile = (topicId === "help-guide" || topicId === "c-syntaxes");
+      const isHelpFile = (topicId === "c-syntaxes");
 
       if (isHelpFile) {
         DOM.docCategory.innerText = "Reference";
-        DOM.docTitle.innerText = (topicId === "help-guide") ? "Student Guide" : "C Syntaxes";
-        DOM.docDesc.innerText = (topicId === "help-guide") ? "Platform usage instructions." : "C Language loops, structs, and pointers.";
+        DOM.docTitle.innerText = "C Syntaxes";
+        DOM.docDesc.innerText = "C Language loops, structs, and pointers.";
         
         if (DOM.mobileActiveTopic) {
-          DOM.mobileActiveTopic.innerText = (topicId === "help-guide") ? "Student Guide" : "C Syntaxes";
+          DOM.mobileActiveTopic.innerText = "C Syntaxes";
         }
 
         this.fetchAndRenderMarkdown(topicId);
@@ -849,12 +848,14 @@ document.addEventListener("DOMContentLoaded", () => {
     writeTerminalTextLine(text) {
       if (term) {
         term.write(text + "\r\n");
+        term.scrollToBottom();
       }
     },
 
     writeTerminalHtmlLine(html) {
       if (term) {
         term.write(this.htmlToAnsi(html) + "\r\n");
+        term.scrollToBottom();
       }
     },
 
@@ -868,6 +869,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (term) {
         const prompt = `\x1b[1;36m${State.terminalUsername}@${State.terminalHostname}\x1b[0m:\x1b[1;33m~/os_lab\x1b[0m$ `;
         term.write(prompt);
+        term.scrollToBottom();
       }
     },
 
@@ -1313,7 +1315,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Compile and Run Trigger
       if (DOM.compileTriggerBtn) {
         DOM.compileTriggerBtn.addEventListener("click", () => {
-          if (!State.activeTopicId || State.activeTopicId === "help-guide" || State.activeTopicId === "c-syntaxes") return;
+          if (!State.activeTopicId || State.activeTopicId === "c-syntaxes") return;
           
           // Reset any running terminal simulation prompts to prevent collisions
           State.terminalIsInteractive = false;
